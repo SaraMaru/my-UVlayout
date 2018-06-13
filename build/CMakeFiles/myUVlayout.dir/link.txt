@@ -1,0 +1,1 @@
+/usr/bin/c++     CMakeFiles/myUVlayout.dir/viewer.cpp.o  -o myUVlayout /usr/lib/x86_64-linux-gnu/libGLU.so /usr/lib/x86_64-linux-gnu/libGL.so /usr/lib/x86_64-linux-gnu/libglut.so /usr/lib/x86_64-linux-gnu/libXi.so -lassimp -lfreeimage 

@@ -1,0 +1,7 @@
+/home/mjm/Documents/myUVlayout/build/CMakeFiles/edit_cache.dir
+/home/mjm/Documents/myUVlayout/build/CMakeFiles/install/strip.dir
+/home/mjm/Documents/myUVlayout/build/CMakeFiles/myUVlayout.dir
+/home/mjm/Documents/myUVlayout/build/CMakeFiles/rebuild_cache.dir
+/home/mjm/Documents/myUVlayout/build/CMakeFiles/list_install_components.dir
+/home/mjm/Documents/myUVlayout/build/CMakeFiles/install/local.dir
+/home/mjm/Documents/myUVlayout/build/CMakeFiles/install.dir

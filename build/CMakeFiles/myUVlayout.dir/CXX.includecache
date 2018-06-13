@@ -1,0 +1,26 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/mjm/Documents/myUVlayout/viewer.cpp
+stdlib.h
+-
+stdio.h
+-
+glut.h
+-
+GL/glut.h
+-
+assimp/cimport.h
+-
+assimp/scene.h
+-
+assimp/postprocess.h
+-
+FreeImage.h
+-
+
