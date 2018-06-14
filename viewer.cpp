@@ -11,27 +11,13 @@
 // ----------------------------------------------------------------------------
 */
 
-#include <stdlib.h>
-#include <stdio.h>
-
-#ifdef __APPLE__
-#include <glut.h>
-#else
-#include <GL/glut.h>
-#endif
-
-/* assimp include files. These three are usually needed. */
-#include <assimp/cimport.h>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-
-/* for grab() */
-#include <FreeImage.h>
+#include "my_header.h"
 
 /* the global Assimp scene object */
 const aiScene* scene = NULL;
 GLuint scene_list = 0;
 aiVector3D scene_min, scene_max, scene_center;
+scene_edges all_edges; /* edges of the whole scene */
 
 float eye[] = { 0.f, 0.f, 3.f };
 float center[] = { 0.f, 0.f, -5.f };
@@ -370,6 +356,8 @@ int loadasset (const char* path)
 	/* we are taking one of the postprocessing presets to avoid
 	   spelling out 20+ single postprocessing flags here. */
 	scene = aiImportFile(path,aiProcessPreset_TargetRealtime_MaxQuality);
+
+    gen_edges(scene, all_edges);
 
 	if (scene) {
 		get_bounding_box(&scene_min,&scene_max);

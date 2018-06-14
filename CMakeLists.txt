@@ -20,6 +20,8 @@ LINK_DIRECTORIES(
 ADD_EXECUTABLE(
   ${TARGET_NAME}
   viewer.cpp
+  gen_edges.cpp
+  segmentation.cpp
 )
 
 TARGET_LINK_LIBRARIES(
