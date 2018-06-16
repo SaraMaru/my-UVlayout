@@ -12,12 +12,16 @@
 */
 
 #include "my_header.h"
+#include <iostream>
+using namespace std;
 
 /* the global Assimp scene object */
 const aiScene* scene = NULL;
 GLuint scene_list = 0;
 aiVector3D scene_min, scene_max, scene_center;
-scene_edges all_edges; /* edges of the whole scene */
+
+scene_edge_face_map all_efm; /* of the whole scene */
+scene_edge_list all_split_edges;
 
 float eye[] = { 0.f, 0.f, 3.f };
 float center[] = { 0.f, 0.f, -5.f };
@@ -34,7 +38,7 @@ static GLint prev_time = 0;
 #define WINDOW_WIDTH 900
 #define WINDOW_HEIGHT 600
 
-bool b_edit_mode = true;
+bool b_line_mode = false;
 bool b_rotate = false;
 
 /* ---------------------------------------------------------------------------- */
@@ -45,7 +49,7 @@ void reshape(int width, int height)
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	gluPerspective(fieldOfView, aspectRatio,
-		1.0, 1000.0);  /* Znear and Zfar */
+		0.1, 1000.0);  /* Znear and Zfar */
 	glViewport(0, 0, width, height);
 }
 
@@ -163,14 +167,17 @@ void apply_material(const aiMaterial *mtl)
 		glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, c);
 	}
 
-	
-    fill_mode = GL_LINE;
-    /*max = 1;
-	if(AI_SUCCESS == aiGetMaterialIntegerArray(mtl, AI_MATKEY_ENABLE_WIREFRAME, &wireframe, &max))
-		fill_mode = wireframe ? GL_LINE : GL_FILL;
-	else
-		fill_mode = GL_FILL;*/
-    glPolygonMode(GL_FRONT_AND_BACK, fill_mode);
+	if(b_line_mode) {
+    	fill_mode = GL_LINE;
+	}
+	else {
+		max = 1;
+		if(AI_SUCCESS == aiGetMaterialIntegerArray(mtl, AI_MATKEY_ENABLE_WIREFRAME, &wireframe, &max))
+			fill_mode = wireframe ? GL_LINE : GL_FILL;
+		else
+			fill_mode = GL_FILL;
+	}
+	glPolygonMode(GL_FRONT_AND_BACK, fill_mode);
 
 	max = 1;
 	if((AI_SUCCESS == aiGetMaterialIntegerArray(mtl, AI_MATKEY_TWOSIDED, &two_sided, &max)) && two_sided)
@@ -234,6 +241,36 @@ void recursive_render (const aiScene *sc, const aiNode* nd)
 	for (n = 0; n < nd->mNumChildren; ++n) {
 		recursive_render(sc, nd->mChildren[n]);
 	}
+
+	glPopMatrix();
+}
+
+void draw_split_edges() {
+	aiMatrix4x4 m = scene->mRootNode->mTransformation;
+	aiTransposeMatrix4(&m);
+	glPushMatrix();
+	glMultMatrixf((float*)&m);
+
+	glDisable(GL_LIGHTING); //light and color can not be used at the same time
+	glColor3f(1.0,0.0,0.0);
+	glBegin(GL_LINES);  
+
+	int index = 0;
+	for(int me=0; me<scene->mNumMeshes; me++) {
+		const aiMesh* mesh = scene->mMeshes[me];	
+		edge_list es = all_split_edges[index];
+		for(edge_list::iterator it = es.begin(); it != es.end(); it++) {
+			edge e = *it;
+			glVertex3fv(&mesh->mVertices[e.pA].x);
+			glVertex3fv(&mesh->mVertices[e.pB].x);
+			/*cout<<e.pA<<"---"<<e.pB<<endl;*/
+		}
+		index++;
+	}
+
+	glEnd();
+	glColor3f(1.0,1.0,1.0);
+	glEnable(GL_LIGHTING);
 
 	glPopMatrix();
 }
@@ -309,17 +346,21 @@ void display(void)
 
         /* if the display list has not been made yet, create a new one and
            fill it with scene contents */
-	if(scene_list == 0) {
+	/*if(scene_list == 0) {
 	    scene_list = glGenLists(1);
-	    glNewList(scene_list, GL_COMPILE);
+	    glNewList(scene_list, GL_COMPILE);*/
             /* now begin at the root node of the imported data and traverse
                the scenegraph by multiplying subsequent local transforms
                together on GL's matrix stack. */
 	    recursive_render(scene, scene->mRootNode);
-	    glEndList();
+	    /*glEndList();
 	}
+	glCallList(scene_list);*/
 
-	glCallList(scene_list);
+	/* draw the split lines */
+	if(all_split_edges.size()>0) {
+		draw_split_edges();
+	}
 
 	glutSwapBuffers();
 
@@ -333,14 +374,15 @@ void key(unsigned char k, int x, int y)
 	switch(k)
 	{
 	    case 27: { exit(0); break; } /* press esc to quit */
-	    case 'e': { b_edit_mode = !b_edit_mode; break; }
+	    case 'e': { scene_segmentation(scene,all_efm,all_split_edges); break; }
+		case 'l': { b_line_mode = !b_line_mode; break; }
         case ' ': { b_rotate = !b_rotate; prev_time = glutGet(GLUT_ELAPSED_TIME); break; }
-        case 'a': { eye[0]+=0.1; center[0]+=0.1; break; }
-	    case 'd': { eye[0]-=0.1; center[0]-=0.1; break; }
-    	case 'w': { eye[1]-=0.1; center[1]-=0.1; break; }
-	    case 's': { eye[1]+=0.1; center[1]+=0.1; break; }
-	    case 'z': { eye[2]-=0.1; center[2]-=0.1; break; }
-	    case 'c': { eye[2]+=0.1; center[2]+=0.1; break; }
+        case 'a': { eye[0]+=0.05; center[0]+=0.1; break; }
+	    case 'd': { eye[0]-=0.05; center[0]-=0.1; break; }
+    	case 'w': { eye[1]-=0.05; center[1]-=0.1; break; }
+	    case 's': { eye[1]+=0.05; center[1]+=0.1; break; }
+	    case 'z': { eye[2]-=0.025; center[2]-=0.1; break; }
+	    case 'c': { eye[2]+=0.025; center[2]+=0.1; break; }
 	    case 'g': { grab("test.png"); break;}
     }
 }
@@ -357,13 +399,26 @@ int loadasset (const char* path)
 	   spelling out 20+ single postprocessing flags here. */
 	scene = aiImportFile(path,aiProcessPreset_TargetRealtime_MaxQuality);
 
-    gen_edges(scene, all_edges);
-
 	if (scene) {
 		get_bounding_box(&scene_min,&scene_max);
 		scene_center.x = (scene_min.x + scene_max.x) / 2.0f;
 		scene_center.y = (scene_min.y + scene_max.y) / 2.0f;
 		scene_center.z = (scene_min.z + scene_max.z) / 2.0f;
+
+		if(scene->mRootNode->mNumChildren>0) {
+			printf("ERROR: Do not support hierarchy of nodes!\n");
+		}
+		int m_num=0, f_num=0, v_num=0;	
+		for(int m=0; m<scene->mNumMeshes; m++) {
+			edge_face_map efm;
+			const aiMesh* mesh = scene->mMeshes[m];
+			m_num += 1;
+			f_num += mesh->mNumFaces;
+			v_num += mesh->mNumVertices;
+			gen_edges(mesh,efm);
+			all_efm.push_back(efm);
+		}
+		printf("Found %d meshes, %d faces, and %d vertices.\n",m_num,f_num,v_num);
 		return 0;
 	}
 	return 1;
@@ -378,7 +433,7 @@ int main(int argc, char **argv)
 	glutInitWindowPosition(100,100);
 	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
 	glutInit(&argc, argv);
-	glutCreateWindow("Assimp - Very simple OpenGL sample");
+	glutCreateWindow("myUVlayout");
 
 	glutDisplayFunc(display);
 	glutReshapeFunc(reshape);
@@ -393,27 +448,22 @@ int main(int argc, char **argv)
 
 	/* ... same procedure, but this stream now writes the
 	   log messages to assimp_log.txt */
-	stream = aiGetPredefinedLogStream(aiDefaultLogStream_FILE,"assimp_log.txt");
+	stream = aiGetPredefinedLogStream(aiDefaultLogStream_FILE,"myUVlayout_log.txt");
 	aiAttachLogStream(&stream);
 
-	/* the model name can be specified on the command line. If none
-	  is specified, we try to locate one of the more expressive test
-	  models from the repository (/models-nonbsd may be missing in
-	  some distributions so we need a fallback from /models!). */
-	if( 0 != loadasset( argc >= 2 ? argv[1] : "../../test/models-nonbsd/X/dwarf.x")) {    /* loadasset() is the key */
-		if( argc != 1 || (0 != loadasset( "../../../../test/models-nonbsd/X/dwarf.x") && 0 != loadasset( "../../test/models/X/Testwuson.X"))) {
-			return -1;
-		}
+	/* the model name can be specified on the command line */
+	if( 0 != loadasset(argv[1]) ) {    /* loadasset() is the key */
+		return -1;
 	}
 
 	glClearColor(0.1f,0.1f,0.1f,1.f);
 
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);    /* Uses default lighting parameters */
+	glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
 
 	glEnable(GL_DEPTH_TEST);
 
-	glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
 	glEnable(GL_NORMALIZE);
 
 	/* XXX docs say all polygons are emitted CCW, but tests show that some aren't. */

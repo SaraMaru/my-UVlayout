@@ -35,8 +35,12 @@ FreeImage.h
 /home/mjm/Documents/myUVlayout/segmentation.cpp
 my_header.h
 /home/mjm/Documents/myUVlayout/my_header.h
+iostream
+-
 
 /home/mjm/Documents/myUVlayout/viewer.cpp
 my_header.h
 /home/mjm/Documents/myUVlayout/my_header.h
+iostream
+-
 

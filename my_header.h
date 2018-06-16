@@ -11,6 +11,16 @@
 #include <assimp/postprocess.h>
 #include <FreeImage.h> /* for grab() */
 
+/* -------------------------------------------------------------------------------- */
+
+enum edge_lock { /* can not connect to a locked point */
+    NO_LOCK, LOCK_A, LOCK_B, LOCK_BOTH
+};
+
+enum link_type {
+    NO_LINK, LINK_AA, LINK_AB, LINK_BA, LINK_BB
+};
+
 struct edge {
     int pA,pB;
     edge(int a, int b) { /* important for find() and < */
@@ -26,12 +36,50 @@ struct edge {
             return true;
         return false;
     }
+    friend bool operator != (const edge& eA, const edge& eB) {
+        return !(eA==eB);
+    }
     friend bool operator < (const edge& eA, const edge& eB) {
         if(eA.pA<eB.pA)
             return true;
         else if(eA.pA==eB.pA && eA.pB<eB.pB)
             return true;
         return false;
+    }
+};
+
+struct seg_edge {
+    edge e;
+    float sharpness; //angle
+    bool isChosen;
+    bool islockedA;
+    bool islockedB;
+
+    seg_edge(edge ee) : e(ee) {
+        isChosen = islockedA = islockedB = false;
+    }
+    seg_edge(edge ee, float s) : e(ee) {
+        sharpness = s;
+        isChosen = islockedA = islockedB = false;
+    }
+    link_type canLinkTo(const seg_edge &se) {
+        if(se.islockedA || se.islockedB) /* notice the || here (not &&) */
+            return NO_LINK;
+        if(islockedA && islockedB)
+            return NO_LINK;
+        if(!se.islockedA) {
+            if(e.pA==se.e.pA && !islockedA)
+                return LINK_AA;
+            else if(e.pB==se.e.pA && !islockedB)
+                return LINK_BA;
+        }
+        if(!se.islockedB) {
+            if(e.pA==se.e.pB && !islockedA)
+                return LINK_AB;
+            else if(e.pB==se.e.pB && !islockedB)
+                return LINK_BB;
+        }
+        return NO_LINK;
     }
 };
 
@@ -49,14 +97,35 @@ struct face_pair {
     }
 };
 
-typedef std::map<edge,face_pair> edge_face_map;
-typedef edge_face_map mesh_edges; /* edges of a mesh */
-typedef std::vector<mesh_edges*> scene_edges; /* edges of the whole scene */
+struct angle_index {
+    float angle;
+    int id;
+    angle_index(float a, int i) : angle(a), id(i) {}
+    friend bool operator < (const angle_index& x, const angle_index& y) {
+        if(x.angle<y.angle)
+            return true;
+        return false;
+    }
+};
 
 /* -------------------------------------------------------------------------------- */
 
-extern void gen_edges (const aiScene *sc, scene_edges all_edges);
-extern void segmentation (const aiScene *sc, scene_edges all_edges);
+typedef std::map<edge,face_pair> edge_face_map; /* edges of a mesh */
+typedef std::vector<edge_face_map> scene_edge_face_map; /* edges of the whole scene */
+
+typedef aiVector3D* face_normals;
+typedef std::vector<face_normals> scene_face_normals;
+
+typedef std::vector<edge> edge_list;
+typedef std::vector<seg_edge> seg_edge_list;
+typedef std::vector<edge_list> scene_edge_list; 
+
+/* -------------------------------------------------------------------------------- */
+
+extern void gen_edges (const aiMesh* mesh, edge_face_map &efm);
+extern void scene_segmentation (const aiScene *sc, scene_edge_face_map &all_edges, scene_edge_list &sce);
+
+/* -------------------------------------------------------------------------------- */
 
 #endif
 
