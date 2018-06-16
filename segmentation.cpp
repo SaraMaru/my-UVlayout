@@ -32,7 +32,7 @@ void gen_face_normals(const aiMesh *mesh, face_normals &fn) {
 
 void connect_to_others(seg_edge_list &edges, int index, vector<int> &result, int len, float weight) {
     float max_sharpness = VERY_SMALL_SHARPNESS;
-    int new_index;
+    int new_index = -1;
     int repeat = edges.size();
     for(int i=0; i<repeat; i++) {
         if(edges[index].canLinkTo(edges[i])!=NO_LINK && edges[index].e!=edges[i].e) { /* neighbors */
@@ -44,8 +44,12 @@ void connect_to_others(seg_edge_list &edges, int index, vector<int> &result, int
         }
     }
     //cout<<"s"<<max_sharpness<<" ";
-    if(max_sharpness<=VERY_SMALL_SHARPNESS) /* can not find a new edge */
+    
+    if(new_index<0) { /* can not find a new edge */
+        for(int i=0; i<len; i++)
+            result.pop_back();
         return;
+    }
 
     /* link a and new_index */
     result.push_back(new_index);
@@ -69,7 +73,7 @@ void connect_to_others(seg_edge_list &edges, int index, vector<int> &result, int
     if(len<max_string_length) {
         connect_to_others(edges,new_index,result,len,weight);
     }
-    else if(weight<threshold_two) {
+    else if(weight < max_string_length*threshold_two) {
         for(int i=0; i<max_string_length; i++) {
             result.pop_back();
         }
@@ -77,9 +81,11 @@ void connect_to_others(seg_edge_list &edges, int index, vector<int> &result, int
 }
 
 void expand_features(seg_edge_list &edges, edge_list &result) {
+    int sum = 0;
     for(seg_edge_list::iterator it = edges.begin(); it != edges.end(); it++) {
         if(!it->isChosen)
             continue;
+        sum++;
         vector<int> S;
         connect_to_others(edges, it-edges.begin(), S, 0, 0);
         cout<<S.size()<<" ";
@@ -87,14 +93,15 @@ void expand_features(seg_edge_list &edges, edge_list &result) {
             for(vector<int>::iterator itt = S.begin(); itt != S.end(); itt++) {
                 result.push_back(edges[*itt].e);
                 for(seg_edge_list::iterator ittt = edges.begin(); ittt != edges.end(); ittt++) {
-                    if( edges[*itt].canLinkTo(*ittt)!=NO_LINK && edges[*itt].e!=ittt->e ) { /* neighbors */
-                        ittt->islockedA = false;
-                        ittt->islockedB = false;
+                    if( edges[*itt].canLinkTo(*ittt)!=NO_LINK ) { /* neighbors and themselves */
+                        ittt->islockedA = true;
+                        ittt->islockedB = true;
                     }
                 }
             }
         }
     }
+    cout<<"split line numbers before connecting: "<<sum<<endl;
 }
 
 void segmentation(const aiMesh *mesh, edge_face_map &efm, edge_list &split_edges) {
@@ -111,8 +118,8 @@ void segmentation(const aiMesh *mesh, edge_face_map &efm, edge_list &split_edges
         fA = iter->second.fA; fB = iter->second.fB;
         if(fB>=0) {
             float angle = fn[fA]*fn[fB]; /* normals in fn should have been normalized */
-            edges.push_back(seg_edge(iter->first,1-angle)); /* -x has the same tendency as acos(x), and is bigger than 1*/
-            if(angle>=1) cout<<"a"<<angle<<" ";
+            edges.push_back(seg_edge(iter->first,1-angle)); /* 1-x has the same tendency as acos(x), and is >= 1*/
+            //if(angle>=1) cout<<"a"<<angle<<" ";
             a_i_list.push_back(angle_index(angle,index)); 
                 /* x has the opposite tendency as acos(x), so it is enough for sorting */          
         }
@@ -131,6 +138,7 @@ void segmentation(const aiMesh *mesh, edge_face_map &efm, edge_list &split_edges
     }
 
     expand_features(edges,split_edges);
+    cout<<"split line number: "<<split_edges.size()<<endl;
 }
 
 void scene_segmentation(const aiScene *sc, scene_edge_face_map &scene_efm, scene_edge_list &result) {
