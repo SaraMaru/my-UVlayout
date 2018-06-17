@@ -169,32 +169,32 @@ myUVlayout/fast:
 	$(MAKE) -f CMakeFiles/myUVlayout.dir/build.make CMakeFiles/myUVlayout.dir/build
 .PHONY : myUVlayout/fast
 
-gen_edges.o: gen_edges.cpp.o
+gen_info.o: gen_info.cpp.o
 
-.PHONY : gen_edges.o
+.PHONY : gen_info.o
 
 # target to build an object file
-gen_edges.cpp.o:
-	$(MAKE) -f CMakeFiles/myUVlayout.dir/build.make CMakeFiles/myUVlayout.dir/gen_edges.cpp.o
-.PHONY : gen_edges.cpp.o
+gen_info.cpp.o:
+	$(MAKE) -f CMakeFiles/myUVlayout.dir/build.make CMakeFiles/myUVlayout.dir/gen_info.cpp.o
+.PHONY : gen_info.cpp.o
 
-gen_edges.i: gen_edges.cpp.i
+gen_info.i: gen_info.cpp.i
 
-.PHONY : gen_edges.i
+.PHONY : gen_info.i
 
 # target to preprocess a source file
-gen_edges.cpp.i:
-	$(MAKE) -f CMakeFiles/myUVlayout.dir/build.make CMakeFiles/myUVlayout.dir/gen_edges.cpp.i
-.PHONY : gen_edges.cpp.i
+gen_info.cpp.i:
+	$(MAKE) -f CMakeFiles/myUVlayout.dir/build.make CMakeFiles/myUVlayout.dir/gen_info.cpp.i
+.PHONY : gen_info.cpp.i
 
-gen_edges.s: gen_edges.cpp.s
+gen_info.s: gen_info.cpp.s
 
-.PHONY : gen_edges.s
+.PHONY : gen_info.s
 
 # target to generate assembly for a file
-gen_edges.cpp.s:
-	$(MAKE) -f CMakeFiles/myUVlayout.dir/build.make CMakeFiles/myUVlayout.dir/gen_edges.cpp.s
-.PHONY : gen_edges.cpp.s
+gen_info.cpp.s:
+	$(MAKE) -f CMakeFiles/myUVlayout.dir/build.make CMakeFiles/myUVlayout.dir/gen_info.cpp.s
+.PHONY : gen_info.cpp.s
 
 segmentation.o: segmentation.cpp.o
 
@@ -263,9 +263,9 @@ help:
 	@echo "... list_install_components"
 	@echo "... install/local"
 	@echo "... install"
-	@echo "... gen_edges.o"
-	@echo "... gen_edges.i"
-	@echo "... gen_edges.s"
+	@echo "... gen_info.o"
+	@echo "... gen_info.i"
+	@echo "... gen_info.s"
 	@echo "... segmentation.o"
 	@echo "... segmentation.i"
 	@echo "... segmentation.s"

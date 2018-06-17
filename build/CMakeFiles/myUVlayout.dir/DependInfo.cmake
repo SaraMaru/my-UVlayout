@@ -4,7 +4,7 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
-  "/home/mjm/Documents/myUVlayout/gen_edges.cpp" "/home/mjm/Documents/myUVlayout/build/CMakeFiles/myUVlayout.dir/gen_edges.cpp.o"
+  "/home/mjm/Documents/myUVlayout/gen_info.cpp" "/home/mjm/Documents/myUVlayout/build/CMakeFiles/myUVlayout.dir/gen_info.cpp.o"
   "/home/mjm/Documents/myUVlayout/segmentation.cpp" "/home/mjm/Documents/myUVlayout/build/CMakeFiles/myUVlayout.dir/segmentation.cpp.o"
   "/home/mjm/Documents/myUVlayout/viewer.cpp" "/home/mjm/Documents/myUVlayout/build/CMakeFiles/myUVlayout.dir/viewer.cpp.o"
   )

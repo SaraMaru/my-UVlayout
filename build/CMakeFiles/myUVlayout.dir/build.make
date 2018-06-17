@@ -81,28 +81,28 @@ CMakeFiles/myUVlayout.dir/viewer.cpp.o.provides: CMakeFiles/myUVlayout.dir/viewe
 CMakeFiles/myUVlayout.dir/viewer.cpp.o.provides.build: CMakeFiles/myUVlayout.dir/viewer.cpp.o
 
 
-CMakeFiles/myUVlayout.dir/gen_edges.cpp.o: CMakeFiles/myUVlayout.dir/flags.make
-CMakeFiles/myUVlayout.dir/gen_edges.cpp.o: ../gen_edges.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/mjm/Documents/myUVlayout/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/myUVlayout.dir/gen_edges.cpp.o"
-	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/myUVlayout.dir/gen_edges.cpp.o -c /home/mjm/Documents/myUVlayout/gen_edges.cpp
+CMakeFiles/myUVlayout.dir/gen_info.cpp.o: CMakeFiles/myUVlayout.dir/flags.make
+CMakeFiles/myUVlayout.dir/gen_info.cpp.o: ../gen_info.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/mjm/Documents/myUVlayout/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/myUVlayout.dir/gen_info.cpp.o"
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/myUVlayout.dir/gen_info.cpp.o -c /home/mjm/Documents/myUVlayout/gen_info.cpp
 
-CMakeFiles/myUVlayout.dir/gen_edges.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/myUVlayout.dir/gen_edges.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/mjm/Documents/myUVlayout/gen_edges.cpp > CMakeFiles/myUVlayout.dir/gen_edges.cpp.i
+CMakeFiles/myUVlayout.dir/gen_info.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/myUVlayout.dir/gen_info.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/mjm/Documents/myUVlayout/gen_info.cpp > CMakeFiles/myUVlayout.dir/gen_info.cpp.i
 
-CMakeFiles/myUVlayout.dir/gen_edges.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/myUVlayout.dir/gen_edges.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/mjm/Documents/myUVlayout/gen_edges.cpp -o CMakeFiles/myUVlayout.dir/gen_edges.cpp.s
+CMakeFiles/myUVlayout.dir/gen_info.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/myUVlayout.dir/gen_info.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/mjm/Documents/myUVlayout/gen_info.cpp -o CMakeFiles/myUVlayout.dir/gen_info.cpp.s
 
-CMakeFiles/myUVlayout.dir/gen_edges.cpp.o.requires:
+CMakeFiles/myUVlayout.dir/gen_info.cpp.o.requires:
 
-.PHONY : CMakeFiles/myUVlayout.dir/gen_edges.cpp.o.requires
+.PHONY : CMakeFiles/myUVlayout.dir/gen_info.cpp.o.requires
 
-CMakeFiles/myUVlayout.dir/gen_edges.cpp.o.provides: CMakeFiles/myUVlayout.dir/gen_edges.cpp.o.requires
-	$(MAKE) -f CMakeFiles/myUVlayout.dir/build.make CMakeFiles/myUVlayout.dir/gen_edges.cpp.o.provides.build
-.PHONY : CMakeFiles/myUVlayout.dir/gen_edges.cpp.o.provides
+CMakeFiles/myUVlayout.dir/gen_info.cpp.o.provides: CMakeFiles/myUVlayout.dir/gen_info.cpp.o.requires
+	$(MAKE) -f CMakeFiles/myUVlayout.dir/build.make CMakeFiles/myUVlayout.dir/gen_info.cpp.o.provides.build
+.PHONY : CMakeFiles/myUVlayout.dir/gen_info.cpp.o.provides
 
-CMakeFiles/myUVlayout.dir/gen_edges.cpp.o.provides.build: CMakeFiles/myUVlayout.dir/gen_edges.cpp.o
+CMakeFiles/myUVlayout.dir/gen_info.cpp.o.provides.build: CMakeFiles/myUVlayout.dir/gen_info.cpp.o
 
 
 CMakeFiles/myUVlayout.dir/segmentation.cpp.o: CMakeFiles/myUVlayout.dir/flags.make
@@ -132,14 +132,14 @@ CMakeFiles/myUVlayout.dir/segmentation.cpp.o.provides.build: CMakeFiles/myUVlayo
 # Object files for target myUVlayout
 myUVlayout_OBJECTS = \
 "CMakeFiles/myUVlayout.dir/viewer.cpp.o" \
-"CMakeFiles/myUVlayout.dir/gen_edges.cpp.o" \
+"CMakeFiles/myUVlayout.dir/gen_info.cpp.o" \
 "CMakeFiles/myUVlayout.dir/segmentation.cpp.o"
 
 # External object files for target myUVlayout
 myUVlayout_EXTERNAL_OBJECTS =
 
 myUVlayout: CMakeFiles/myUVlayout.dir/viewer.cpp.o
-myUVlayout: CMakeFiles/myUVlayout.dir/gen_edges.cpp.o
+myUVlayout: CMakeFiles/myUVlayout.dir/gen_info.cpp.o
 myUVlayout: CMakeFiles/myUVlayout.dir/segmentation.cpp.o
 myUVlayout: CMakeFiles/myUVlayout.dir/build.make
 myUVlayout: /usr/lib/x86_64-linux-gnu/libGLU.so
@@ -156,7 +156,7 @@ CMakeFiles/myUVlayout.dir/build: myUVlayout
 .PHONY : CMakeFiles/myUVlayout.dir/build
 
 CMakeFiles/myUVlayout.dir/requires: CMakeFiles/myUVlayout.dir/viewer.cpp.o.requires
-CMakeFiles/myUVlayout.dir/requires: CMakeFiles/myUVlayout.dir/gen_edges.cpp.o.requires
+CMakeFiles/myUVlayout.dir/requires: CMakeFiles/myUVlayout.dir/gen_info.cpp.o.requires
 CMakeFiles/myUVlayout.dir/requires: CMakeFiles/myUVlayout.dir/segmentation.cpp.o.requires
 
 .PHONY : CMakeFiles/myUVlayout.dir/requires

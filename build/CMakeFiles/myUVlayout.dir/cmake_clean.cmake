@@ -1,6 +1,6 @@
 file(REMOVE_RECURSE
   "CMakeFiles/myUVlayout.dir/viewer.cpp.o"
-  "CMakeFiles/myUVlayout.dir/gen_edges.cpp.o"
+  "CMakeFiles/myUVlayout.dir/gen_info.cpp.o"
   "CMakeFiles/myUVlayout.dir/segmentation.cpp.o"
   "myUVlayout.pdb"
   "myUVlayout"

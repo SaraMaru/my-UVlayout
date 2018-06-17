@@ -20,8 +20,11 @@ const aiScene* scene = NULL;
 GLuint scene_list = 0;
 aiVector3D scene_min, scene_max, scene_center;
 
-scene_edge_face_map all_efm; /* of the whole scene */
+/* of the whole scene */
+scene_edge_list all_edges;
 scene_edge_list all_split_edges;
+scene_edge_face_map all_efm;
+scene_vertex_edge_map all_vem;
 
 float eye[] = { 0.f, 0.f, 3.f };
 float center[] = { 0.f, 0.f, -5.f };
@@ -374,7 +377,7 @@ void key(unsigned char k, int x, int y)
 	switch(k)
 	{
 	    case 27: { exit(0); break; } /* press esc to quit */
-	    case 'e': { scene_segmentation(scene,all_efm,all_split_edges); break; }
+	    case 'e': { scene_segmentation(scene,all_edges,all_efm,all_vem,all_split_edges); break; }
 		case 'l': { b_line_mode = !b_line_mode; break; }
         case ' ': { b_rotate = !b_rotate; prev_time = glutGet(GLUT_ELAPSED_TIME); break; }
         case 'a': { eye[0]+=0.05; center[0]+=0.1; break; }
@@ -408,17 +411,27 @@ int loadasset (const char* path)
 		if(scene->mRootNode->mNumChildren>0) {
 			printf("ERROR: Do not support hierarchy of nodes!\n");
 		}
-		int m_num=0, f_num=0, v_num=0;	
+		int m_num=0, f_num=0, e_num=0, v_num=0;	
 		for(int m=0; m<scene->mNumMeshes; m++) {
-			edge_face_map efm;
 			const aiMesh* mesh = scene->mMeshes[m];
+			edge_list el;
+			edge_face_map efm;
+			vertex_edge_map vem;
+			gen_edges(mesh,el);
+			cout<<"gen_edges() done"<<endl;
+			gen_edge_face_map(mesh,el,efm);
+			cout<<"gen_edge_face_map() done"<<endl;
+			gen_vertex_edge_map(el,vem);
+			cout<<"gen_vertex_edge_map() done"<<endl;
+			all_edges.push_back(el);
+			all_efm.push_back(efm);
+			all_vem.push_back(vem);
 			m_num += 1;
 			f_num += mesh->mNumFaces;
+			e_num += el.size();
 			v_num += mesh->mNumVertices;
-			gen_edges(mesh,efm);
-			all_efm.push_back(efm);
 		}
-		printf("Found %d meshes, %d faces, and %d vertices.\n",m_num,f_num,v_num);
+		printf("Found %d meshes, %d faces, %d edges, and %d vertices.\n",m_num,f_num,e_num,v_num);
 		return 0;
 	}
 	return 1;
