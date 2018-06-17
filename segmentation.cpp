@@ -30,11 +30,59 @@ void gen_face_normals(const aiMesh *mesh, face_normals &fn) {
     }
 }
 
-void connect_to_others(seg_edge_list &edges, int index, vector<int> &result, int len, float weight, bool *lock_list) {
+void find_next(seg_edge_list &edges, const vertex_edge_map &vem, bool *lock_list, const int index,
+        float sharpness, float &max_sharpness, vector<int> &S, vector<int> &best_path, vector<int> &P) {
+
+    int point;
+    float prev_sharpness = sharpness;
+    sharpness += edges[index].sharpness;
+    S.push_back(index);
+    int len = S.size();
+    //cout<<index<<"*"<<len<<" ";
+    if(sharpness>max_sharpness) {
+        max_sharpness = sharpness;
+        best_path.assign(S.begin(),S.end());
+    }
+
+    if(len<max_string_length) {
+        if(len>1) {
+            int i = *(S.end()-2);
+            point = edges[index].adjacentTo(edges[i]);
+            P.push_back(point);
+            lock_list[point] = true;
+        }
+
+        vector<int>::const_iterator iter;
+        int p;
+        p = edges[index].e.pA;
+        if(!lock_list[p]) {
+            const vector<int> &vA = vem.find(p)->second;
+            for(iter=vA.begin(); iter!=vA.end(); iter++)
+                if(*iter!=index)
+                    find_next(edges,vem,lock_list,*iter,sharpness,max_sharpness,S,best_path,P);
+        }
+        p = edges[index].e.pB;
+        if(!lock_list[p]) {
+            const vector<int> &vB = vem.find(p)->second;
+            for(iter=vB.begin(); iter!=vB.end(); iter++)
+                if(*iter!=index)
+                    find_next(edges,vem,lock_list,*iter,sharpness,max_sharpness,S,best_path,P);
+        }
+
+        if(len>1) {
+            lock_list[point] = false;
+            P.pop_back();
+        }
+    }
+   
+    S.pop_back();
+    sharpness = prev_sharpness;
+}
+
+void easy_find_next(seg_edge_list &edges, int index, vector<int> &result, int len, float weight, bool *lock_list) {
     float max_sharpness = VERY_SMALL_SHARPNESS;
     int new_index = -1;
     int repeat = edges.size();
-    //cout<<"repeat:"<<repeat<<endl;
     for(int i=0; i<repeat; i++) {
         int p = edges[index].adjacentTo(edges[i]);
         if(p>=0 && !lock_list[p]) { /* neighbors */
@@ -45,14 +93,14 @@ void connect_to_others(seg_edge_list &edges, int index, vector<int> &result, int
             }
         }
     }
-    //cout<<"s"<<max_sharpness<<" ";
     
     if(new_index<0) { /* can not find a new edge */
+        int prev_e, point;
         for(int i=0; i<len; i++) {
-            /*if(result.back()>=35947 || result.back()<0) 
-                cout<<"result:"<<result.back()<<endl;*/
-            //lock_list[result.back()] = false;
+            prev_e = result.back();
             result.pop_back();
+            point = edges[result.back()].adjacentTo(edges[prev_e]);
+            lock_list[point] = false;
         }
         return;
     }
@@ -71,19 +119,21 @@ void connect_to_others(seg_edge_list &edges, int index, vector<int> &result, int
         len++;
     }
     if(len<max_string_length) {
-        connect_to_others(edges,new_index,result,len,weight,lock_list);
+        easy_find_next(edges,new_index,result,len,weight,lock_list);
     }
     else if(weight < max_string_length*threshold_two) {
+        int prev_e, point;
         for(int i=0; i<max_string_length; i++) {
-            /*if(result.back()>=35947 || result.back()<0) 
-                cout<<"result:"<<result.back()<<endl;*/
-            //lock_list[result.back()] = false;
+            prev_e = result.back();
             result.pop_back();
+            point = edges[result.back()].adjacentTo(edges[prev_e]);
+            lock_list[point] = false;
         }
     }
 }
 
 void expand_features(const mesh_info &mi, seg_edge_list &edges, edge_list &result) {
+    const vertex_edge_map &vem = mi.vem;
     const int v_num = mi.mesh->mNumVertices;
     bool *is_locked = new bool[v_num];
     cout<<"v_num:"<<v_num<<endl;
@@ -94,11 +144,28 @@ void expand_features(const mesh_info &mi, seg_edge_list &edges, edge_list &resul
         if(!it->isChosen)
             continue;
         sum++;
-        vector<int> S;
-        connect_to_others(edges, it-edges.begin(), S, 0, 0, is_locked);
-        cout<<S.size()<<" ";
-        if(S.size()>min_feature_length) {
-            for(vector<int>::iterator itt = S.begin(); itt != S.end(); itt++) {
+        vector<int> feature;
+        //easy_find_next(edges, it-edges.begin(), feature, 0, 0, is_locked);
+
+        feature.push_back(it-edges.begin());
+        float max_sharpness;
+        do {
+            max_sharpness = 0;
+            vector<int> S,best_path,P;
+            find_next(edges,vem,is_locked,feature.back(),0,max_sharpness,S,best_path,P);
+            if(best_path.size()>1) {
+                feature.push_back(best_path[1]);
+                //cout<<"{"<<best_path[0]<<" "<<best_path[1]<<"}"<<endl;
+                int p = edges[best_path[0]].adjacentTo(edges[best_path[1]]);
+                is_locked[p] = true;
+            }
+            else
+                break;
+        } while(max_sharpness > max_string_length*threshold_two);
+        
+        cout<<"_"<<feature.size()<<"_ ";
+        if(feature.size()>min_feature_length) {
+            for(vector<int>::iterator itt = feature.begin(); itt != feature.end(); itt++) {
                 result.push_back(edges[*itt].e);
                 for(seg_edge_list::iterator ittt = edges.begin(); ittt != edges.end(); ittt++) {
                     if( edges[*itt].adjacentTo(*ittt)>=0 ) { /* neighbors */
