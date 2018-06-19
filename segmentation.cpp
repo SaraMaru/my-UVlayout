@@ -207,7 +207,7 @@ int calc_feature_dists(const mesh_info &mi, const edge_list &split_edges, int* d
     return dist-1;
 }
 
-void expand_charts(const mesh_info &mi, const edge_list &split_edges) {
+void expand_charts(const mesh_info &mi, edge_list &split_edges) {
     const aiMesh *mesh = mi.mesh;
     const edge_list el = mi.el;
     const raw_edge_face_map refm = mi.refm;
@@ -232,10 +232,10 @@ void expand_charts(const mesh_info &mi, const edge_list &split_edges) {
             else
                 vb = face->mIndices[i+1];
             face_pair fp = refm.find(edge(va,vb))->second;
-            if(fp.fA==f)
-                adj_faces.push_back(fp.fB);
-            else
+            if(fp.fB==f)
                 adj_faces.push_back(fp.fA);
+            else if(fp.fB>=0)
+                adj_faces.push_back(fp.fB);
         }
         int i;
         for(i=0; i<adj_faces.size(); i++) {
@@ -263,11 +263,10 @@ void expand_charts(const mesh_info &mi, const edge_list &split_edges) {
     set<edge> boundaries;
     for(int e=0; e<el.size(); e++)
         boundaries.insert(el[e]);
-    cout<<"set size: "<<boundaries.size()<<endl;
     vector<dist_index> d_i_heap;
     for(vector<int>::iterator it=seed.begin(); it!=seed.end(); it++) {
         charts[*it] = *it;
-        d_i_heap.push_back(dists[*it],*it);
+        d_i_heap.push_back(dist_index(dists[*it],*it));
     }
     make_heap(d_i_heap.begin(), d_i_heap.end(), less<dist_index>());
 
@@ -276,6 +275,7 @@ void expand_charts(const mesh_info &mi, const edge_list &split_edges) {
         const aiFace *face = &mesh->mFaces[face_id];
         pop_heap(d_i_heap.begin(),d_i_heap.end());
         d_i_heap.pop_back();
+        cout<<"\n"<<boundaries.size()<<"--"<<d_i_heap.size()<<".."<<face_id<<"--"<<charts[face_id]<<"--"<<dists[face_id];
 
         for(int i=0; i<face->mNumIndices; i++) {
             int va,vb;
@@ -284,33 +284,78 @@ void expand_charts(const mesh_info &mi, const edge_list &split_edges) {
                 vb = face->mIndices[0];
             else
                 vb = face->mIndices[i+1];
-            face_pair fp = refm.find(edge(va,vb))->second;
+            edge e = edge(va,vb);
+            if(boundaries.find(e)==boundaries.end())
+                continue;
+            face_pair fp = refm.find(e)->second;
             int opp_face_id;
-            if(fp.fA==f)
+            if(fp.fA==face_id)
                 opp_face_id = fp.fB;
             else
                 opp_face_id = fp.fA;
+            if(opp_face_id<0)
+                continue;
             if(charts[opp_face_id]<0) { /* if opp_face's chart is not defined */
+                cout<<"Z("<<opp_face_id<<")";
                 charts[opp_face_id] = charts[face_id];
-                boundaries.erase(edge(va,vb));
+                //boundaries.erase(e);
+                d_i_heap.push_back(dist_index(dists[opp_face_id],opp_face_id));
+                push_heap(d_i_heap.begin(),d_i_heap.end());
                 const aiFace *opp_face = &mesh->mFaces[opp_face_id];
-                for(int ii=0; ii<opp_face->mNumIndices; ii++) { /* only for triangles */
-                    int vc = opp_face->mIndices[ii];
-                    if(vc==va || vc==vb)
+                for(int ii=0; ii<opp_face->mNumIndices; ii++) {
+                    int vaa,vbb;
+                    vaa = opp_face->mIndices[ii];
+                    if(ii==opp_face->mNumIndices-1)
+                        vbb = opp_face->mIndices[0];
+                    else
+                        vbb = opp_face->mIndices[ii+1];
+                    edge ee = edge(vaa,vbb);
+                    if(boundaries.find(ee)==boundaries.end())
                         continue;
-                    boundaries.insert(edge(vc,va));
-                    boundaries.insert(edge(vc,vb));
+                    face_pair fpp = refm.find(ee)->second;
+                    if(charts[fpp.fA]==charts[fpp.fB])
+                        boundaries.erase(edge(ee));
                 }
             }
             else if( charts[opp_face_id] != charts[face_id] && dists[charts[face_id]]-dists[face_id] < merge_dist &&
-                    dists[charts[opp_face_id]]-dists[opp_face_id] < merge_dist ) {
+                    dists[charts[opp_face_id]]-dists[opp_face_id] < merge_dist ) { /* merge two charts */
                 int c1 = charts[face_id];  int c2 = charts[opp_face_id];
-                int c = dists[c1]>=dists[c2] ? c1 : c2;
+                cout<<"M("<<c1<<" "<<c2<<")("<<opp_face_id<<")";
+                for(raw_edge_face_map::const_iterator it=refm.begin(); it!=refm.end(); it++) {
+                    int fA = it->second.fA; int fB = it->second.fB;
+                    if( (charts[fA]==c1 && charts[fB]==c2) || (charts[fA]==c2 && charts[fB]==c1) )
+                        boundaries.erase(it->first);
+                }
+                int c_old,c_new;
+                if(dists[c1]>=dists[c2]) {
+                    c_new = c1;  c_old = c2;
+                }
+                else {
+                    c_new = c2;  c_old = c1;
+                }
+                for(int f=0; f<f_num; f++) {
+                    if(charts[f]==c_old)
+                        charts[f] = c_new;
+                }
             }
         }
     }
 
+    split_edges.clear();
+    for(set<edge>::const_iterator it=boundaries.begin(); it!=boundaries.end(); it++)
+        split_edges.push_back(*it);
+
     delete[] dists;
+
+    set<int> chart_ids;
+    int no_def_face = 0;
+    for(int f=0; f<f_num; f++) {
+        chart_ids.insert(charts[f]);
+        if(charts[f]<0)
+            no_def_face++;
+    }
+    cout<<"Number of charts: "<<chart_ids.size()<<endl;
+    cout<<no_def_face<<" faces belong to no charts"<<endl;
 }
 
 void segment(const mesh_info &mi, edge_list &split_edges) {
@@ -339,7 +384,6 @@ void segment(const mesh_info &mi, edge_list &split_edges) {
     }
 
     sort(a_i_list.begin(),a_i_list.end());
-
     int num = threshold_one * a_i_list.size();
     for(int i=0; i<num; i++) {
         edges[a_i_list[i].id].isChosen = true;

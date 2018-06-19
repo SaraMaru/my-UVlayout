@@ -132,7 +132,7 @@ struct dist_index {
             return true;
         return false;
     }
-}
+};
 
 struct triangle {
     float x1=0, y1=0;
