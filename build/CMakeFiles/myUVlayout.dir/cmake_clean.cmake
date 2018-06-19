@@ -4,6 +4,7 @@ file(REMOVE_RECURSE
   "CMakeFiles/myUVlayout.dir/segmentation.cpp.o"
   "CMakeFiles/myUVlayout.dir/parameterization.cpp.o"
   "CMakeFiles/myUVlayout.dir/packing.cpp.o"
+  "CMakeFiles/myUVlayout.dir/gen_obj.cpp.o"
   "myUVlayout.pdb"
   "myUVlayout"
 )

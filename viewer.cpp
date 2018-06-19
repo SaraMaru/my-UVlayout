@@ -14,18 +14,18 @@
 #include "my_header.h"
 using namespace std;
 
-/* the global Assimp scene object */
 const aiScene* scene = NULL;
 GLuint scene_list = 0;
 aiVector3D scene_min, scene_max, scene_center;
 
-/* of the whole scene */
 scene_edge_list all_edges;
-scene_edge_list all_split_edges;
 scene_edge_face_map all_efm;
 scene_raw_edge_face_map all_refm;
 scene_vertex_edge_map all_vem;
 scene_face_normals all_fn;
+//scene_info si = scene_info(scene,all_edges,all_efm,all_refm,all_vem,all_fn);
+
+scene_edge_list all_split_edges;
 scene_UV_list all_UV;
 
 float eye[] = { 0.f, 0.f, 3.f };
@@ -417,10 +417,11 @@ void key(unsigned char k, int x, int y)
 	    case 'c': { eye[2]+=0.025; center[2]+=0.1; break; }
         case ' ': { b_rotate = !b_rotate; prev_time = glutGet(GLUT_ELAPSED_TIME); break; }
 		case 'l': { b_line_mode = !b_line_mode; break; }
-	    case 'e': { scene_segment( scene_info(scene,all_edges,all_efm,all_refm,all_vem,all_fn), all_split_edges ); break; }
+	    case 'e': { scene_segment( scene_info(scene,all_edges,all_efm,all_refm,all_vem,all_fn) ,all_split_edges ); break; }
 		case 'p': { scene_parameterize( scene_info(scene,all_edges,all_efm,all_refm,all_vem,all_fn), all_UV ); break; }
 		case 'u': { b_UV_mode = !b_UV_mode; break; }
-	    case 'g': { grab("test.png"); break;}
+	    case 'g': { grab("test.png"); break; }
+		case 'o': { gen_obj( scene_info(scene,all_edges,all_efm,all_refm,all_vem,all_fn), all_UV ); break; }
     }
 }
 

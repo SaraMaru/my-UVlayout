@@ -6,6 +6,7 @@ const float threshold_two = 0.08f; /* will not continue connecting if weight < m
 const int min_feature_length = 15;
 const int max_string_length = 5;
 const float VERY_SMALL_SHARPNESS = -10;
+const float merge_tendency = 0.25;
 
 void find_next(seg_edge_list &edges, const vertex_edge_map &vem, bool *lock_list, const int index,
         float sharpness, float &max_sharpness, vector<int> &S, vector<int> &best_path, vector<int> &P) {
@@ -113,7 +114,7 @@ void expand_features(const mesh_info &mi, seg_edge_list &edges, edge_list &resul
     const vertex_edge_map &vem = mi.vem;
     const int v_num = mi.mesh->mNumVertices;
     bool *is_locked = new bool[v_num];
-    cout<<"v_num:"<<v_num<<endl;
+    //cout<<"v_num:"<<v_num<<endl;
     for(int i=0; i<v_num; i++)
         is_locked[i] = false;
     int sum = 0;
@@ -158,35 +159,35 @@ void expand_features(const mesh_info &mi, seg_edge_list &edges, edge_list &resul
     cout<<"split line numbers before connecting: "<<sum<<endl;
 }
 
-void calc_feature_dists(const mesh_info &mi, const edge_list &split_edges, int* dists) {
+int calc_feature_dists(const mesh_info &mi, const edge_list &split_edges, int* dists) {
     const aiMesh *mesh = mi.mesh;
     const edge_list el = mi.el;
     const raw_edge_face_map refm = mi.refm;
 
+    set<edge> marked_edges;
     queue<int> face_queue;
     edge_list edges;
-    int dist = 0;
+    int dist = 1;
     edges.assign(split_edges.begin(),split_edges.end());
 
     while(!edges.empty()) {
         for(int i=0; i<edges.size(); i++) {
-            face_pair fp = refm.find(el[i])->second;
-            if(dists[fp.fA]<0 || dists[fp.fA]>dist) {
+            marked_edges.insert(edges[i]);
+            face_pair fp = refm.find(edges[i])->second;
+            if(dists[fp.fA]<0 || dists[fp.fA]>dist) { /* dists[.] is initilized to -1 */
                 face_queue.push(fp.fA);
-                dists[fp.fA] = 0;
+                dists[fp.fA] = dist;
             }
             if(dists[fp.fB]<0 || dists[fp.fB]>dist) {
                 face_queue.push(fp.fB);
-                dists[fp.fB] = 0;
+                dists[fp.fB] = dist;
             }
         }
         edges.clear();
-        dist++;
         while(!face_queue.empty()) {
             int f = face_queue.front();
             //cout<<".."<<f<<".. ";
             face_queue.pop();
-            dists[f] = dist;
             const aiFace* face = &mesh->mFaces[f];
             for(int i = 0; i < face->mNumIndices; i++) {
                 int va,vb;
@@ -195,19 +196,120 @@ void calc_feature_dists(const mesh_info &mi, const edge_list &split_edges, int* 
                     vb = face->mIndices[0];
                 else
                     vb = face->mIndices[i+1];
-                edges.push_back(edge(va,vb));
+                edge e = edge(va,vb);
+                set<edge>::iterator iter = marked_edges.find(e);
+                if(iter==marked_edges.end()) /* e is not in the set */
+                    edges.push_back(e);
             }
         }
+        dist++;
     }
+    return dist-1;
 }
 
 void expand_charts(const mesh_info &mi, const edge_list &split_edges) {
     const aiMesh *mesh = mi.mesh;
+    const edge_list el = mi.el;
+    const raw_edge_face_map refm = mi.refm;
     int f_num = mesh->mNumFaces;
     int *dists = new int[f_num];
-    for(int i=0; i<f_num; i++)
-        dists[i] = -1;
-    calc_feature_dists(mi,split_edges,dists);
+    for(int f=0; f<f_num; f++)
+        dists[f] = -1;
+    int max_dist = calc_feature_dists(mi,split_edges,dists);
+    float merge_dist = max_dist*merge_tendency;
+    cout<<"calc_feature_dists() done"<<endl;
+    cout<<"max_dist: "<<max_dist<<endl;
+
+    vector<int> seed;
+    for(int f=0; f<f_num; f++) {
+        aiFace *face = &mesh->mFaces[f];
+        vector<int> adj_faces;
+        for(int i=0; i<face->mNumIndices; i++) {
+            int va,vb;
+            va = face->mIndices[i];
+            if(i==face->mNumIndices-1)
+                vb = face->mIndices[0];
+            else
+                vb = face->mIndices[i+1];
+            face_pair fp = refm.find(edge(va,vb))->second;
+            if(fp.fA==f)
+                adj_faces.push_back(fp.fB);
+            else
+                adj_faces.push_back(fp.fA);
+        }
+        int i;
+        for(i=0; i<adj_faces.size(); i++) {
+            if(dists[adj_faces[i]]>=dists[f])
+                break;
+        }
+        if(i>=adj_faces.size()) {
+            seed.push_back(f);
+            cout<<f<<"/"<<dists[f]<<" ";
+        }
+    }
+    /*vector<int>::iterator it;
+    for(it=seed.begin(); it!=seed.end();) {
+        if(dists[*it]<max_dist/2)
+            it = seed.erase(it);
+        else
+            it++;
+    }
+    for(it=seed.begin(); it!=seed.end(); it++)
+        cout<<(*it)<<"//"<<dists[*it]<<" ";*/
+
+    int *charts = new int[f_num];
+    for(int f=0; f<f_num; f++)
+        charts[f] = -1;
+    set<edge> boundaries;
+    for(int e=0; e<el.size(); e++)
+        boundaries.insert(el[e]);
+    cout<<"set size: "<<boundaries.size()<<endl;
+    vector<dist_index> d_i_heap;
+    for(vector<int>::iterator it=seed.begin(); it!=seed.end(); it++) {
+        charts[*it] = *it;
+        d_i_heap.push_back(dists[*it],*it);
+    }
+    make_heap(d_i_heap.begin(), d_i_heap.end(), less<dist_index>());
+
+    while(!d_i_heap.empty()) {
+        int face_id = d_i_heap.front().id;
+        const aiFace *face = &mesh->mFaces[face_id];
+        pop_heap(d_i_heap.begin(),d_i_heap.end());
+        d_i_heap.pop_back();
+
+        for(int i=0; i<face->mNumIndices; i++) {
+            int va,vb;
+            va = face->mIndices[i];
+            if(i==face->mNumIndices-1)
+                vb = face->mIndices[0];
+            else
+                vb = face->mIndices[i+1];
+            face_pair fp = refm.find(edge(va,vb))->second;
+            int opp_face_id;
+            if(fp.fA==f)
+                opp_face_id = fp.fB;
+            else
+                opp_face_id = fp.fA;
+            if(charts[opp_face_id]<0) { /* if opp_face's chart is not defined */
+                charts[opp_face_id] = charts[face_id];
+                boundaries.erase(edge(va,vb));
+                const aiFace *opp_face = &mesh->mFaces[opp_face_id];
+                for(int ii=0; ii<opp_face->mNumIndices; ii++) { /* only for triangles */
+                    int vc = opp_face->mIndices[ii];
+                    if(vc==va || vc==vb)
+                        continue;
+                    boundaries.insert(edge(vc,va));
+                    boundaries.insert(edge(vc,vb));
+                }
+            }
+            else if( charts[opp_face_id] != charts[face_id] && dists[charts[face_id]]-dists[face_id] < merge_dist &&
+                    dists[charts[opp_face_id]]-dists[opp_face_id] < merge_dist ) {
+                int c1 = charts[face_id];  int c2 = charts[opp_face_id];
+                int c = dists[c1]>=dists[c2] ? c1 : c2;
+            }
+        }
+    }
+
     delete[] dists;
 }
 
@@ -235,10 +337,8 @@ void segment(const mesh_info &mi, edge_list &split_edges) {
             edges.push_back(seg_edge(el[index],VERY_SMALL_SHARPNESS));
         }
     }
-    cout<<"efm_size:"<<efm.size()<<" "<<"edges_size:"<<edges.size()<<endl;
 
     sort(a_i_list.begin(),a_i_list.end());
-    cout<<"sort() done"<<endl;
 
     int num = threshold_one * a_i_list.size();
     for(int i=0; i<num; i++) {

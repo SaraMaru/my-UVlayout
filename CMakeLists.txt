@@ -24,6 +24,7 @@ ADD_EXECUTABLE(
   segmentation.cpp
   parameterization.cpp
   packing.cpp
+  gen_obj.cpp
 )
 
 TARGET_LINK_LIBRARIES(

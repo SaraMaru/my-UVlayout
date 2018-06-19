@@ -4,9 +4,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
+#include <fstream>
 #include <map>
 #include <vector>
 #include <queue>
+#include <set>
 #include <algorithm> /* for heap */
 #include <GL/glut.h>
 #include <assimp/cimport.h>
@@ -121,6 +123,17 @@ struct angle_index {
     }
 };
 
+struct dist_index {
+    float dist;
+    int id;
+    dist_index(float d, int i) : dist(d), id(i) {}
+    friend bool operator < (const dist_index& x, const dist_index& y) {
+        if(x.dist<y.dist)
+            return true;
+        return false;
+    }
+}
+
 struct triangle {
     float x1=0, y1=0;
     float x2, y2=0;
@@ -169,7 +182,7 @@ struct scene_info {
     const scene_raw_edge_face_map &s_refm; 
     const scene_vertex_edge_map &s_vem; 
     const scene_face_normals &s_fn;
-    scene_info(const aiScene *sc, const scene_edge_list &s_el, const scene_edge_face_map &s_efm,
+    scene_info(const aiScene *sc, const scene_edge_list &s_el, const scene_edge_face_map &s_efm, 
         const scene_raw_edge_face_map &s_refm, const scene_vertex_edge_map &s_vem, const scene_face_normals s_fn) :
         sc(sc), s_el(s_el), s_efm(s_efm), s_refm(s_refm), s_vem(s_vem), s_fn(s_fn) {}
 };
@@ -182,6 +195,7 @@ extern void gen_vertex_edge_map (const edge_list &el, vertex_edge_map &vem);
 extern void gen_face_normals(const aiMesh *mesh, face_normals &fn);
 extern void scene_segment (const scene_info &si, scene_edge_list &result);
 extern void scene_parameterize (const scene_info &si, scene_UV_list &SUVL);
+extern void gen_obj(const scene_info &si, scene_UV_list &all_UV);
 
 /* -------------------------------------------------------------------------------- */
 

@@ -196,6 +196,33 @@ gen_info.cpp.s:
 	$(MAKE) -f CMakeFiles/myUVlayout.dir/build.make CMakeFiles/myUVlayout.dir/gen_info.cpp.s
 .PHONY : gen_info.cpp.s
 
+gen_obj.o: gen_obj.cpp.o
+
+.PHONY : gen_obj.o
+
+# target to build an object file
+gen_obj.cpp.o:
+	$(MAKE) -f CMakeFiles/myUVlayout.dir/build.make CMakeFiles/myUVlayout.dir/gen_obj.cpp.o
+.PHONY : gen_obj.cpp.o
+
+gen_obj.i: gen_obj.cpp.i
+
+.PHONY : gen_obj.i
+
+# target to preprocess a source file
+gen_obj.cpp.i:
+	$(MAKE) -f CMakeFiles/myUVlayout.dir/build.make CMakeFiles/myUVlayout.dir/gen_obj.cpp.i
+.PHONY : gen_obj.cpp.i
+
+gen_obj.s: gen_obj.cpp.s
+
+.PHONY : gen_obj.s
+
+# target to generate assembly for a file
+gen_obj.cpp.s:
+	$(MAKE) -f CMakeFiles/myUVlayout.dir/build.make CMakeFiles/myUVlayout.dir/gen_obj.cpp.s
+.PHONY : gen_obj.cpp.s
+
 packing.o: packing.cpp.o
 
 .PHONY : packing.o
@@ -320,6 +347,9 @@ help:
 	@echo "... gen_info.o"
 	@echo "... gen_info.i"
 	@echo "... gen_info.s"
+	@echo "... gen_obj.o"
+	@echo "... gen_obj.i"
+	@echo "... gen_obj.s"
 	@echo "... packing.o"
 	@echo "... packing.i"
 	@echo "... packing.s"

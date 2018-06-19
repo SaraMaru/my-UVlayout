@@ -4,6 +4,9 @@
 CMakeFiles/myUVlayout.dir/gen_info.cpp.o: ../gen_info.cpp
 CMakeFiles/myUVlayout.dir/gen_info.cpp.o: ../my_header.h
 
+CMakeFiles/myUVlayout.dir/gen_obj.cpp.o: ../gen_obj.cpp
+CMakeFiles/myUVlayout.dir/gen_obj.cpp.o: ../my_header.h
+
 CMakeFiles/myUVlayout.dir/packing.cpp.o: ../my_header.h
 CMakeFiles/myUVlayout.dir/packing.cpp.o: ../packing.cpp
 
