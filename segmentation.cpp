@@ -2,7 +2,7 @@
 using namespace std;
 
 const float threshold_one = 0.05f; /* kept threshold_one/100 of the detected edges */
-const float threshold_two = 0.02f; /* will not continue connecting if weight < max_string_length * threshold_two */
+const float threshold_two = 0.08f; /* will not continue connecting if weight < max_string_length * threshold_two */
 const int min_feature_length = 15;
 const int max_string_length = 5;
 const float VERY_SMALL_SHARPNESS = -10;
@@ -227,7 +227,7 @@ void segment(const mesh_info &mi, edge_list &split_edges) {
         if(fB>=0) {
             float angle = fn[fA]*fn[fB]; /* normals in fn should have been normalized */
             edges.push_back(seg_edge(el[index],1-angle)); /* 1-x has the same tendency as acos(x), and is >= 1*/
-            //if(angle>=1) cout<<"a"<<angle<<" ";
+            //cout<<"a"<<angle<<" ";
             a_i_list.push_back(angle_index(angle,index)); 
                 /* x has the opposite tendency as acos(x), so it is enough for sorting */          
         }

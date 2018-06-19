@@ -91,10 +91,9 @@ void gen_face_normals(const aiMesh *mesh, face_normals &fn) {
     fn = new aiVector3D[mesh->mNumFaces];
     for (f = 0; f < mesh->mNumFaces; ++f) {
         const aiFace* face = &mesh->mFaces[f];
-        aiVector3D norm = aiVector3D(0,0,0);
-        for(i = 0; i < face->mNumIndices; i++) {
-            norm += mesh->mNormals[face->mIndices[i]];
-        }
-        fn[f] = norm.Normalize();
+        const aiVector3D* pV1 = &mesh->mVertices[face->mIndices[0]];
+        const aiVector3D* pV2 = &mesh->mVertices[face->mIndices[1]];
+        const aiVector3D* pV3 = &mesh->mVertices[face->mIndices[face->mNumIndices-1]];
+        fn[f] = ((*pV2 - *pV1) ^ (*pV3 - *pV1)).Normalize();
     }
 }

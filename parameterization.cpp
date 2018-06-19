@@ -14,7 +14,7 @@ double dist(Vector3d &a, Vector3d &b) {
 }
 
 double dist(aiVector3D &a, aiVector3D &b) {
-    return (trans(a)-trans(b)).norm();
+    return (a-b).Length();
 }
 
 /* each triangle is provided with a local orthonormal basis */
@@ -33,7 +33,7 @@ void get_coordinates(const mesh_info &mi, triangle *ts) {
         Vector3d y_axis = trans(fn[f]).cross(x_axis);
         y_axis.normalize();
         ts[f].y3 = v1v3.dot(y_axis);
-        std::cout<<"f"<<f<<": "<<ts[f].x1<<","<<ts[f].y1<<" "<<ts[f].x2<<","<<ts[f].y2<<" "<<ts[f].x3<<","<<ts[f].y3<<std::endl;
+        std::cout<<"f"<<f<<": ("<<ts[f].x1<<","<<ts[f].y1<<") ("<<ts[f].x2<<","<<ts[f].y2<<") ("<<ts[f].x3<<","<<ts[f].y3<<")"<<std::endl;
         std::cout<<"fn: "<<trans(fn[f]).transpose()<<std::endl;
     }
     /*for(int f=0; f<mesh->mNumFaces; f++) {
@@ -47,7 +47,7 @@ void get_coordinates(const mesh_info &mi, triangle *ts) {
     }*/
 }
 
-void find_pinned_vertices(const aiMesh *mesh, int &a, int &b) {
+double find_pinned_vertices(const aiMesh *mesh, int &a, int &b) {
     int max_x,max_y,max_z;
     int min_x,min_y,min_z;
     int max_x_id,max_y_id,max_z_id,min_x_id,min_y_id,min_z_id;
@@ -65,20 +65,21 @@ void find_pinned_vertices(const aiMesh *mesh, int &a, int &b) {
     double dist_x = dist(mesh->mVertices[min_x_id],mesh->mVertices[max_x_id]);
     double dist_y = dist(mesh->mVertices[min_y_id],mesh->mVertices[max_y_id]);
     double dist_z = dist(mesh->mVertices[min_z_id],mesh->mVertices[max_z_id]);
+    double max_dist;
     if(dist_x>dist_z) {
         if(dist_x>dist_y) { //dist_x is the biggest
-            a = min_x_id;  b = max_x_id;
+            a = min_x_id;  b = max_x_id; max_dist = dist_x;
         }
         else { //dist_y is the biggest
-            a = min_y_id;  b = max_y_id;
+            a = min_y_id;  b = max_y_id; max_dist = dist_y;
         }
     }
     else { 
         if(dist_y>dist_z) { //dist_y is the biggest
-            a = min_y_id;  b = max_y_id;
+            a = min_y_id;  b = max_y_id; max_dist = dist_y;
         }
         else { //dist_z is the biggest
-            a = min_z_id;  b = max_z_id;
+            a = min_z_id;  b = max_z_id; max_dist = dist_z;
         }
     }
     if(a>b) {
@@ -86,9 +87,10 @@ void find_pinned_vertices(const aiMesh *mesh, int &a, int &b) {
         b = a;
         a = tmp;
     }
+    return max_dist;
 }
 
-void parameterize(const mesh_info &mi) {
+void parameterize(const mesh_info &mi, UV_list &UV) {
     const aiMesh *mesh = mi.mesh;
     int v_num = mesh->mNumVertices;
     int f_num = mesh->mNumFaces;
@@ -111,14 +113,15 @@ void parameterize(const mesh_info &mi) {
         Mi(f,face->mIndices[2]) = (t.y2 - t.y1) / sqrt_dt;
     }
     std::cout<<"M done"<<std::endl;
-    std::cout<<Mr<<endl;
-    std::cout<<Mi<<endl;
+    //std::cout<<"Mr: "<<Mr<<endl;
+    //std::cout<<"Mi: "<<Mi<<endl;
 
     int id1,id2;
-    find_pinned_vertices(mesh, id1, id2);
+    double max_dist = find_pinned_vertices(mesh, id1, id2);
     std::cout<<"find_pinned_vertices() done"<<std::endl;
-    std::cout<<trans(mesh->mVertices[id1])<<endl;
-    std::cout<<trans(mesh->mVertices[id2])<<endl;
+    std::cout<<"NO."<<id1<<": "<<trans(mesh->mVertices[id1]).transpose()<<endl;
+    std::cout<<"NO."<<id2<<": "<<trans(mesh->mVertices[id2]).transpose()<<endl;
+    std::cout<<"max_dist: "<<max_dist<<endl;
 
     MatrixXd Mpr(f_num,2);
     Mpr<<Mr.col(id1),Mr.col(id2);
@@ -146,20 +149,37 @@ void parameterize(const mesh_info &mi) {
     b_left << Mpr, -Mpi,
               Mpi, Mpr;
     MatrixXd Up(4,1);
-    Up << -5,5,-5,5;
+    Up << -max_dist/2,max_dist/2,-max_dist/2,max_dist/2;
     MatrixXd b = -b_left*Up; /* b is 2*f_num X 1 */
     std::cout<<"A and b done"<<std::endl;
-    std::cout<<A<<endl;
-    std::cout<<b_left<<endl;
-    std::cout<<b<<endl;
+    //std::cout<<"A: "<<A<<endl;
+    //std::cout<<"b_left: "<<b_left<<endl;
+    //std::cout<<"b: "<<b<<endl;
 
     MatrixXd X = (A.transpose()*A).inverse() * (A.transpose()) * b; /* X is 2*(v_num-2) X 1 */
-    std::cout<<X<<endl;
+
+    UV = new aiVector2D[v_num];
+    UV[id1] = aiVector2D(Up(0),Up(2));
+    UV[id2] = aiVector2D(Up(1),Up(3));
+    int UVid = 0;
+    for(int index = 0; index<v_num-2; index++) {
+        while(UVid==id1 || UVid==id2) {
+            std::cout<<"("<<UV[UVid].x<<") ("<<UV[UVid].y<<")"<<std::endl;
+            UVid++;
+        }
+        UV[UVid] = aiVector2D(X(index),X(v_num-2+index));
+        std::cout<<"("<<UV[UVid].x<<") ("<<UV[UVid].y<<")"<<std::endl;
+        UVid++;
+    }
 }
 
-void scene_parameterize (const scene_info &si) {
+void scene_parameterize (const scene_info &si, scene_UV_list &SUVL) {
+    if(SUVL.size()>0)
+        return;
     for(int m=0; m<si.sc->mNumMeshes; m++) {
         mesh_info mi = mesh_info(si.sc->mMeshes[m], si.s_el[m], si.s_efm[m], si.s_refm[m], si.s_vem[m], si.s_fn[m]);
-        parameterize(mi);
+        UV_list UV;
+        parameterize(mi,UV);
+        SUVL.push_back(UV);
     }
 }

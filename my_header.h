@@ -145,6 +145,9 @@ typedef vector<vertex_edge_map> scene_vertex_edge_map;
 typedef aiVector3D* face_normals;
 typedef vector<face_normals> scene_face_normals;
 
+typedef aiVector2D* UV_list;
+typedef vector<UV_list> scene_UV_list;
+
 /* -------------------------------------------------------------------------------- */
 
 struct mesh_info {
@@ -178,7 +181,7 @@ extern void gen_edge_face_map (const aiMesh *mesh, const edge_list &el, edge_fac
 extern void gen_vertex_edge_map (const edge_list &el, vertex_edge_map &vem);
 extern void gen_face_normals(const aiMesh *mesh, face_normals &fn);
 extern void scene_segment (const scene_info &si, scene_edge_list &result);
-extern void scene_parameterize (const scene_info &si);
+extern void scene_parameterize (const scene_info &si, scene_UV_list &SUVL);
 
 /* -------------------------------------------------------------------------------- */
 

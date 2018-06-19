@@ -26,6 +26,7 @@ scene_edge_face_map all_efm;
 scene_raw_edge_face_map all_refm;
 scene_vertex_edge_map all_vem;
 scene_face_normals all_fn;
+scene_UV_list all_UV;
 
 float eye[] = { 0.f, 0.f, 3.f };
 float center[] = { 0.f, 0.f, -5.f };
@@ -43,6 +44,7 @@ static GLint prev_time = 0;
 #define WINDOW_HEIGHT 600
 
 bool b_line_mode = false;
+bool b_UV_mode = false;
 bool b_rotate = false;
 
 /* ---------------------------------------------------------------------------- */
@@ -279,6 +281,31 @@ void draw_split_edges() {
 	glPopMatrix();
 }
 
+void draw_UVs() {
+	glDisable(GL_LIGHTING); //light and color can not be used at the same time
+	glColor3f(0.0,1.0,0.0);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+	for(int c=0; c<all_UV.size(); c++) {
+		const UV_list UV = all_UV[c];
+		const aiMesh* mesh = scene->mMeshes[c]; /* TODO: chart -> mesh */
+		for(unsigned int f=0; f<mesh->mNumFaces; f++) { /* TODO: face_list */
+			const aiFace* face = &mesh->mFaces[f];
+			glBegin(GL_TRIANGLES);  
+			for(unsigned int i = 0; i < face->mNumIndices; i++) {
+				int new_id = face->mIndices[i]; /* TODO: mesh vertex index -> chart vertex index */
+				//cout<<new_id<<" ";
+				glVertex3f(UV[new_id].x,UV[new_id].y,0);
+			}
+			glEnd();
+		}
+	}
+
+	glColor3f(1.0,1.0,1.0);
+	glEnable(GL_LIGHTING);
+
+}
+
 /* ---------------------------------------------------------------------------- */
 void do_motion (void)
 {
@@ -348,22 +375,26 @@ void display(void)
         /* center the model */
 	glTranslatef( -scene_center.x, -scene_center.y, -scene_center.z );
 
-        /* if the display list has not been made yet, create a new one and
-           fill it with scene contents */
-	/*if(scene_list == 0) {
-	    scene_list = glGenLists(1);
-	    glNewList(scene_list, GL_COMPILE);*/
-            /* now begin at the root node of the imported data and traverse
-               the scenegraph by multiplying subsequent local transforms
-               together on GL's matrix stack. */
-	    recursive_render(scene, scene->mRootNode);
-	    /*glEndList();
+	if(b_UV_mode && all_UV.size()>0) {
+		draw_UVs();
 	}
-	glCallList(scene_list);*/
+	else {
+			/* if the display list has not been made yet, create a new one and
+			fill it with scene contents */
+		/*if(scene_list == 0) {
+			scene_list = glGenLists(1);
+			glNewList(scene_list, GL_COMPILE);*/
+				/* now begin at the root node of the imported data and traverse
+				the scenegraph by multiplying subsequent local transforms
+				together on GL's matrix stack. */
+			recursive_render(scene, scene->mRootNode);
+			/*glEndList();
+		}
+		glCallList(scene_list);*/
 
-	/* draw the split lines */
-	if(all_split_edges.size()>0) {
-		draw_split_edges();
+		if(all_split_edges.size()>0) {
+			draw_split_edges();
+		}
 	}
 
 	glutSwapBuffers();
@@ -387,7 +418,8 @@ void key(unsigned char k, int x, int y)
         case ' ': { b_rotate = !b_rotate; prev_time = glutGet(GLUT_ELAPSED_TIME); break; }
 		case 'l': { b_line_mode = !b_line_mode; break; }
 	    case 'e': { scene_segment( scene_info(scene,all_edges,all_efm,all_refm,all_vem,all_fn), all_split_edges ); break; }
-		case 'p': { scene_parameterize( scene_info(scene,all_edges,all_efm,all_refm,all_vem,all_fn) ); break; }
+		case 'p': { scene_parameterize( scene_info(scene,all_edges,all_efm,all_refm,all_vem,all_fn), all_UV ); break; }
+		case 'u': { b_UV_mode = !b_UV_mode; break; }
 	    case 'g': { grab("test.png"); break;}
     }
 }
