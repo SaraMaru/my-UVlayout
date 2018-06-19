@@ -22,6 +22,8 @@ ADD_EXECUTABLE(
   viewer.cpp
   gen_info.cpp
   segmentation.cpp
+  parameterization.cpp
+  packing.cpp
 )
 
 TARGET_LINK_LIBRARIES(

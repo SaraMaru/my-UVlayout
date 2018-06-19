@@ -196,6 +196,60 @@ gen_info.cpp.s:
 	$(MAKE) -f CMakeFiles/myUVlayout.dir/build.make CMakeFiles/myUVlayout.dir/gen_info.cpp.s
 .PHONY : gen_info.cpp.s
 
+packing.o: packing.cpp.o
+
+.PHONY : packing.o
+
+# target to build an object file
+packing.cpp.o:
+	$(MAKE) -f CMakeFiles/myUVlayout.dir/build.make CMakeFiles/myUVlayout.dir/packing.cpp.o
+.PHONY : packing.cpp.o
+
+packing.i: packing.cpp.i
+
+.PHONY : packing.i
+
+# target to preprocess a source file
+packing.cpp.i:
+	$(MAKE) -f CMakeFiles/myUVlayout.dir/build.make CMakeFiles/myUVlayout.dir/packing.cpp.i
+.PHONY : packing.cpp.i
+
+packing.s: packing.cpp.s
+
+.PHONY : packing.s
+
+# target to generate assembly for a file
+packing.cpp.s:
+	$(MAKE) -f CMakeFiles/myUVlayout.dir/build.make CMakeFiles/myUVlayout.dir/packing.cpp.s
+.PHONY : packing.cpp.s
+
+parameterization.o: parameterization.cpp.o
+
+.PHONY : parameterization.o
+
+# target to build an object file
+parameterization.cpp.o:
+	$(MAKE) -f CMakeFiles/myUVlayout.dir/build.make CMakeFiles/myUVlayout.dir/parameterization.cpp.o
+.PHONY : parameterization.cpp.o
+
+parameterization.i: parameterization.cpp.i
+
+.PHONY : parameterization.i
+
+# target to preprocess a source file
+parameterization.cpp.i:
+	$(MAKE) -f CMakeFiles/myUVlayout.dir/build.make CMakeFiles/myUVlayout.dir/parameterization.cpp.i
+.PHONY : parameterization.cpp.i
+
+parameterization.s: parameterization.cpp.s
+
+.PHONY : parameterization.s
+
+# target to generate assembly for a file
+parameterization.cpp.s:
+	$(MAKE) -f CMakeFiles/myUVlayout.dir/build.make CMakeFiles/myUVlayout.dir/parameterization.cpp.s
+.PHONY : parameterization.cpp.s
+
 segmentation.o: segmentation.cpp.o
 
 .PHONY : segmentation.o
@@ -266,6 +320,12 @@ help:
 	@echo "... gen_info.o"
 	@echo "... gen_info.i"
 	@echo "... gen_info.s"
+	@echo "... packing.o"
+	@echo "... packing.i"
+	@echo "... packing.s"
+	@echo "... parameterization.o"
+	@echo "... parameterization.i"
+	@echo "... parameterization.s"
 	@echo "... segmentation.o"
 	@echo "... segmentation.i"
 	@echo "... segmentation.s"

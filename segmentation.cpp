@@ -1,5 +1,4 @@
 #include "my_header.h"
-#include <iostream>
 using namespace std;
 
 const float threshold_one = 0.05f; /* kept threshold_one/100 of the detected edges */
@@ -7,28 +6,6 @@ const float threshold_two = 0.02f; /* will not continue connecting if weight < m
 const int min_feature_length = 15;
 const int max_string_length = 5;
 const float VERY_SMALL_SHARPNESS = -10;
-
-/* Normal vectors computed by Assimp are always unit-length. 
-   However, this needn't apply for normals that have been taken directly from the model file. */
-void normalize_normals(const aiMesh *m) {
-    aiVector3D* ns = m->mNormals;
-    for(int i = 0; i < m->mNumVertices; i++) {
-        ns[i] = ns[i].NormalizeSafe();
-    }
-}
-
-void gen_face_normals(const aiMesh *mesh, face_normals &fn) {
-    unsigned int f,i;
-    fn = new aiVector3D[mesh->mNumFaces];
-    for (f = 0; f < mesh->mNumFaces; ++f) {
-        const aiFace* face = &mesh->mFaces[f];
-        aiVector3D norm = aiVector3D(0,0,0);
-        for(i = 0; i < face->mNumIndices; i++) {
-            norm += mesh->mNormals[face->mIndices[i]];
-        }
-        fn[f] = norm.Normalize();
-    }
-}
 
 void find_next(seg_edge_list &edges, const vertex_edge_map &vem, bool *lock_list, const int index,
         float sharpness, float &max_sharpness, vector<int> &S, vector<int> &best_path, vector<int> &P) {
@@ -181,14 +158,64 @@ void expand_features(const mesh_info &mi, seg_edge_list &edges, edge_list &resul
     cout<<"split line numbers before connecting: "<<sum<<endl;
 }
 
-void segmentation(const mesh_info &mi, edge_list &split_edges) {
+void calc_feature_dists(const mesh_info &mi, const edge_list &split_edges, int* dists) {
+    const aiMesh *mesh = mi.mesh;
+    const edge_list el = mi.el;
+    const raw_edge_face_map refm = mi.refm;
+
+    queue<int> face_queue;
+    edge_list edges;
+    int dist = 0;
+    edges.assign(split_edges.begin(),split_edges.end());
+
+    while(!edges.empty()) {
+        for(int i=0; i<edges.size(); i++) {
+            face_pair fp = refm.find(el[i])->second;
+            if(dists[fp.fA]<0 || dists[fp.fA]>dist) {
+                face_queue.push(fp.fA);
+                dists[fp.fA] = 0;
+            }
+            if(dists[fp.fB]<0 || dists[fp.fB]>dist) {
+                face_queue.push(fp.fB);
+                dists[fp.fB] = 0;
+            }
+        }
+        edges.clear();
+        dist++;
+        while(!face_queue.empty()) {
+            int f = face_queue.front();
+            //cout<<".."<<f<<".. ";
+            face_queue.pop();
+            dists[f] = dist;
+            const aiFace* face = &mesh->mFaces[f];
+            for(int i = 0; i < face->mNumIndices; i++) {
+                int va,vb;
+                va = face->mIndices[i];
+                if(i==face->mNumIndices-1)
+                    vb = face->mIndices[0];
+                else
+                    vb = face->mIndices[i+1];
+                edges.push_back(edge(va,vb));
+            }
+        }
+    }
+}
+
+void expand_charts(const mesh_info &mi, const edge_list &split_edges) {
+    const aiMesh *mesh = mi.mesh;
+    int f_num = mesh->mNumFaces;
+    int *dists = new int[f_num];
+    for(int i=0; i<f_num; i++)
+        dists[i] = -1;
+    calc_feature_dists(mi,split_edges,dists);
+    delete[] dists;
+}
+
+void segment(const mesh_info &mi, edge_list &split_edges) {
     const aiMesh *mesh = mi.mesh;
     const edge_face_map &efm = mi.efm;
     const edge_list &el = mi.el;
-
-    face_normals fn;
-    gen_face_normals(mesh,fn);
-    cout<<"gen_face_normals() done"<<endl;
+    const face_normals &fn = mi.fn;
 
     seg_edge_list edges;
     vector<angle_index> a_i_list;
@@ -220,18 +247,19 @@ void segmentation(const mesh_info &mi, edge_list &split_edges) {
     }
 
     expand_features(mi,edges,split_edges);
-
     cout<<"split line number: "<<split_edges.size()<<endl;
+
+    expand_charts(mi,split_edges);
+    cout<<"expand_charts() done"<<endl;
 }
 
-void scene_segmentation (const aiScene *sc, const scene_edge_list &scene_el, const scene_edge_face_map &scene_efm,
-        const scene_vertex_edge_map &scene_vem, scene_edge_list &result) {
+void scene_segment (const scene_info &si, scene_edge_list &result) {
     if(result.size()>0)
         return;
-    for(int m=0; m<sc->mNumMeshes; m++) {
+    for(int m=0; m<si.sc->mNumMeshes; m++) {
         edge_list split_edges;
-        mesh_info mi = mesh_info(sc->mMeshes[m], scene_el[m], scene_efm[m], scene_vem[m]);
-        segmentation(mi, split_edges);
+        mesh_info mi = mesh_info(si.sc->mMeshes[m], si.s_el[m], si.s_efm[m], si.s_refm[m], si.s_vem[m], si.s_fn[m]);
+        segment(mi, split_edges);
         result.push_back(split_edges);
     }
 }

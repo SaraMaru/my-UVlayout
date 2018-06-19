@@ -12,7 +12,6 @@
 */
 
 #include "my_header.h"
-#include <iostream>
 using namespace std;
 
 /* the global Assimp scene object */
@@ -24,7 +23,9 @@ aiVector3D scene_min, scene_max, scene_center;
 scene_edge_list all_edges;
 scene_edge_list all_split_edges;
 scene_edge_face_map all_efm;
+scene_raw_edge_face_map all_refm;
 scene_vertex_edge_map all_vem;
+scene_face_normals all_fn;
 
 float eye[] = { 0.f, 0.f, 3.f };
 float center[] = { 0.f, 0.f, -5.f };
@@ -377,15 +378,16 @@ void key(unsigned char k, int x, int y)
 	switch(k)
 	{
 	    case 27: { exit(0); break; } /* press esc to quit */
-	    case 'e': { scene_segmentation(scene,all_edges,all_efm,all_vem,all_split_edges); break; }
-		case 'l': { b_line_mode = !b_line_mode; break; }
-        case ' ': { b_rotate = !b_rotate; prev_time = glutGet(GLUT_ELAPSED_TIME); break; }
         case 'a': { eye[0]+=0.05; center[0]+=0.1; break; }
 	    case 'd': { eye[0]-=0.05; center[0]-=0.1; break; }
     	case 'w': { eye[1]-=0.05; center[1]-=0.1; break; }
 	    case 's': { eye[1]+=0.05; center[1]+=0.1; break; }
 	    case 'z': { eye[2]-=0.025; center[2]-=0.1; break; }
 	    case 'c': { eye[2]+=0.025; center[2]+=0.1; break; }
+        case ' ': { b_rotate = !b_rotate; prev_time = glutGet(GLUT_ELAPSED_TIME); break; }
+		case 'l': { b_line_mode = !b_line_mode; break; }
+	    case 'e': { scene_segment( scene_info(scene,all_edges,all_efm,all_refm,all_vem,all_fn), all_split_edges ); break; }
+		case 'p': { scene_parameterize( scene_info(scene,all_edges,all_efm,all_refm,all_vem,all_fn) ); break; }
 	    case 'g': { grab("test.png"); break;}
     }
 }
@@ -396,6 +398,38 @@ void idle()
 }
 
 /* ---------------------------------------------------------------------------- */
+void pretreat()
+{
+	int m_num=0, f_num=0, e_num=0, v_num=0;	
+	for(int m=0; m<scene->mNumMeshes; m++) {
+		cout<<"mesh "<<m<<" :"<<endl;
+		const aiMesh* mesh = scene->mMeshes[m];
+		edge_list el;
+		edge_face_map efm;
+		raw_edge_face_map refm;
+		vertex_edge_map vem;
+		face_normals fn;
+		gen_edges(mesh,el);
+		cout<<"gen_edges() done"<<endl;
+		gen_edge_face_map(mesh,el,efm,refm);
+		cout<<"gen_edge_face_map() done"<<endl;
+		gen_vertex_edge_map(el,vem);
+		cout<<"gen_vertex_edge_map() done"<<endl;
+		gen_face_normals(mesh,fn);
+		cout<<"gen_face_normals() done"<<endl;
+		all_edges.push_back(el);
+		all_efm.push_back(efm);
+		all_refm.push_back(refm);
+		all_vem.push_back(vem);
+		all_fn.push_back(fn);
+		m_num += 1;
+		f_num += mesh->mNumFaces;
+		e_num += el.size();
+		v_num += mesh->mNumVertices;
+	}
+	printf("Found %d meshes, %d faces, %d edges, and %d vertices.\n",m_num,f_num,e_num,v_num);
+}
+
 int loadasset (const char* path)
 {
 	/* we are taking one of the postprocessing presets to avoid
@@ -411,27 +445,8 @@ int loadasset (const char* path)
 		if(scene->mRootNode->mNumChildren>0) {
 			printf("ERROR: Do not support hierarchy of nodes!\n");
 		}
-		int m_num=0, f_num=0, e_num=0, v_num=0;	
-		for(int m=0; m<scene->mNumMeshes; m++) {
-			const aiMesh* mesh = scene->mMeshes[m];
-			edge_list el;
-			edge_face_map efm;
-			vertex_edge_map vem;
-			gen_edges(mesh,el);
-			cout<<"gen_edges() done"<<endl;
-			gen_edge_face_map(mesh,el,efm);
-			cout<<"gen_edge_face_map() done"<<endl;
-			gen_vertex_edge_map(el,vem);
-			cout<<"gen_vertex_edge_map() done"<<endl;
-			all_edges.push_back(el);
-			all_efm.push_back(efm);
-			all_vem.push_back(vem);
-			m_num += 1;
-			f_num += mesh->mNumFaces;
-			e_num += el.size();
-			v_num += mesh->mNumVertices;
-		}
-		printf("Found %d meshes, %d faces, %d edges, and %d vertices.\n",m_num,f_num,e_num,v_num);
+		pretreat();
+
 		return 0;
 	}
 	return 1;

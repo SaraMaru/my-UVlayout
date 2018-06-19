@@ -3,8 +3,11 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <iostream>
 #include <map>
 #include <vector>
+#include <queue>
+#include <algorithm> /* for heap */
 #include <GL/glut.h>
 #include <assimp/cimport.h>
 #include <assimp/scene.h>
@@ -118,39 +121,64 @@ struct angle_index {
     }
 };
 
+struct triangle {
+    float x1=0, y1=0;
+    float x2, y2=0;
+    float x3, y3;
+};
+
 /* -------------------------------------------------------------------------------- */
 
-typedef vector<edge> edge_list;
+typedef vector<edge> edge_list; /* edges of a mesh */
 typedef vector<seg_edge> seg_edge_list;
-typedef vector<edge_list> scene_edge_list;
+typedef vector<edge_list> scene_edge_list; /* edges of the whole scene */
 
-typedef map<int,face_pair> edge_face_map; /* edges of a mesh */
-typedef vector<edge_face_map> scene_edge_face_map; /* edges of the whole scene */
+typedef map<int,face_pair> edge_face_map;
+typedef vector<edge_face_map> scene_edge_face_map;
+
+typedef map<edge,face_pair> raw_edge_face_map;
+typedef vector<raw_edge_face_map> scene_raw_edge_face_map;
 
 typedef map<int,vector<int>> vertex_edge_map;
 typedef vector<vertex_edge_map> scene_vertex_edge_map;
 
 typedef aiVector3D* face_normals;
 typedef vector<face_normals> scene_face_normals;
- 
+
 /* -------------------------------------------------------------------------------- */
 
 struct mesh_info {
     const aiMesh *mesh;
     const edge_list &el;
     const edge_face_map &efm;
+    const raw_edge_face_map &refm;
     const vertex_edge_map &vem;
-    mesh_info(const aiMesh *mesh, const edge_list &el, const edge_face_map &efm, const vertex_edge_map &vem) : 
-        mesh(mesh), el(el), efm(efm), vem(vem) {}
+    const face_normals fn;
+    mesh_info(const aiMesh *mesh, const edge_list &el, const edge_face_map &efm, const raw_edge_face_map &refm,
+        const vertex_edge_map &vem, const face_normals fn) : 
+        mesh(mesh), el(el), efm(efm), refm(refm), vem(vem), fn(fn) {}
+};
+
+struct scene_info {
+    const aiScene *sc;
+    const scene_edge_list &s_el;
+    const scene_edge_face_map &s_efm;
+    const scene_raw_edge_face_map &s_refm; 
+    const scene_vertex_edge_map &s_vem; 
+    const scene_face_normals &s_fn;
+    scene_info(const aiScene *sc, const scene_edge_list &s_el, const scene_edge_face_map &s_efm,
+        const scene_raw_edge_face_map &s_refm, const scene_vertex_edge_map &s_vem, const scene_face_normals s_fn) :
+        sc(sc), s_el(s_el), s_efm(s_efm), s_refm(s_refm), s_vem(s_vem), s_fn(s_fn) {}
 };
 
 /* -------------------------------------------------------------------------------- */
 
 extern void gen_edges (const aiMesh *mesh, edge_list &el);
-extern void gen_edge_face_map (const aiMesh *mesh, const edge_list &el, edge_face_map &efm);
+extern void gen_edge_face_map (const aiMesh *mesh, const edge_list &el, edge_face_map &efm, raw_edge_face_map &raw_efm);
 extern void gen_vertex_edge_map (const edge_list &el, vertex_edge_map &vem);
-extern void scene_segmentation (const aiScene *sc, const scene_edge_list &scene_el, const scene_edge_face_map &scene_efm,
-    const scene_vertex_edge_map &scene_vem, scene_edge_list &result);
+extern void gen_face_normals(const aiMesh *mesh, face_normals &fn);
+extern void scene_segment (const scene_info &si, scene_edge_list &result);
+extern void scene_parameterize (const scene_info &si);
 
 /* -------------------------------------------------------------------------------- */
 

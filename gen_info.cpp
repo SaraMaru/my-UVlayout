@@ -1,5 +1,4 @@
 #include "my_header.h"
-#include <iostream>
 using namespace std;
 
 void gen_edges (const aiMesh *mesh, edge_list &el)
@@ -23,11 +22,10 @@ void gen_edges (const aiMesh *mesh, edge_list &el)
     el.erase( unique(el.begin(), el.end()), el.end() ); /* erase duplicated elements */
 }
 
-void gen_edge_face_map (const aiMesh *mesh, const edge_list &el, edge_face_map &efm)
+void gen_edge_face_map (const aiMesh *mesh, const edge_list &el, edge_face_map &efm, raw_edge_face_map &raw_efm)
 {
     unsigned int f,i;
     int va,vb;
-    map<edge,face_pair> raw_efm;
     map<edge,face_pair>::iterator iter;    
 
     for (f = 0; f < mesh->mNumFaces; ++f) {
@@ -76,5 +74,27 @@ void gen_vertex_edge_map (const edge_list &el, vertex_edge_map &vem)
         }
         else
             vem_iter->second.push_back(i);
+    }
+}
+
+/* Normal vectors computed by Assimp are always unit-length. 
+   However, this needn't apply for normals that have been taken directly from the model file. */
+void normalize_normals(const aiMesh *m) {
+    aiVector3D* ns = m->mNormals;
+    for(int i = 0; i < m->mNumVertices; i++) {
+        ns[i] = ns[i].NormalizeSafe();
+    }
+}
+
+void gen_face_normals(const aiMesh *mesh, face_normals &fn) {
+    unsigned int f,i;
+    fn = new aiVector3D[mesh->mNumFaces];
+    for (f = 0; f < mesh->mNumFaces; ++f) {
+        const aiFace* face = &mesh->mFaces[f];
+        aiVector3D norm = aiVector3D(0,0,0);
+        for(i = 0; i < face->mNumIndices; i++) {
+            norm += mesh->mNormals[face->mIndices[i]];
+        }
+        fn[f] = norm.Normalize();
     }
 }
