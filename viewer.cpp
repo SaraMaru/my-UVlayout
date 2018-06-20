@@ -26,13 +26,14 @@ scene_face_normals all_fn;
 //scene_info si = scene_info(scene,all_edges,all_efm,all_refm,all_vem,all_fn);
 
 scene_edge_list all_split_edges;
+chart_list all_charts;
 scene_UV_list all_UV;
 
 float eye[] = { 0.f, 0.f, 3.f };
 float center[] = { 0.f, 0.f, -5.f };
 
 /* current rotation angle */
-static float angle = 0.f;
+static float angle = 0.0f;
 
 /* when the previous remote happened */
 static GLint prev_time = 0;
@@ -288,13 +289,14 @@ void draw_UVs() {
 
 	for(int c=0; c<all_UV.size(); c++) {
 		const UV_list UV = all_UV[c];
-		const aiMesh* mesh = scene->mMeshes[c]; /* TODO: chart -> mesh */
-		for(unsigned int f=0; f<mesh->mNumFaces; f++) { /* TODO: face_list */
-			const aiFace* face = &mesh->mFaces[f];
+		const chart *cp = &all_charts[c];
+		const aiMesh* mesh = cp->mi.mesh;
+		for(set<int>::const_iterator it=cp->faces.begin(); it!=cp->faces.end(); it++) {
+			const aiFace* face = &mesh->mFaces[*it];
 			glBegin(GL_TRIANGLES);  
 			for(unsigned int i = 0; i < face->mNumIndices; i++) {
-				int new_id = face->mIndices[i]; /* TODO: mesh vertex index -> chart vertex index */
-				//cout<<new_id<<" ";
+				int new_id = cp->m_2_u.find(face->mIndices[i])->second;
+				//cout<<new_id<<"i ";
 				glVertex3f(UV[new_id].x,UV[new_id].y,0);
 			}
 			glEnd();
@@ -417,8 +419,8 @@ void key(unsigned char k, int x, int y)
 	    case 'c': { eye[2]+=0.025; center[2]+=0.1; break; }
         case ' ': { b_rotate = !b_rotate; prev_time = glutGet(GLUT_ELAPSED_TIME); break; }
 		case 'l': { b_line_mode = !b_line_mode; break; }
-	    case 'e': { scene_segment( scene_info(scene,all_edges,all_efm,all_refm,all_vem,all_fn) ,all_split_edges ); break; }
-		case 'p': { scene_parameterize( scene_info(scene,all_edges,all_efm,all_refm,all_vem,all_fn), all_UV ); break; }
+	    case 'e': { scene_segment( scene_info(scene,all_edges,all_efm,all_refm,all_vem,all_fn) ,all_split_edges, all_charts ); break; }
+		case 'p': { scene_parameterize( scene_info(scene,all_edges,all_efm,all_refm,all_vem,all_fn), all_charts, all_UV ); break; }
 		case 'u': { b_UV_mode = !b_UV_mode; break; }
 	    case 'g': { grab("test.png"); break; }
 		case 'o': { gen_obj( scene_info(scene,all_edges,all_efm,all_refm,all_vem,all_fn), all_UV ); break; }

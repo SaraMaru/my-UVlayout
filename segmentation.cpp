@@ -207,7 +207,7 @@ int calc_feature_dists(const mesh_info &mi, const edge_list &split_edges, int* d
     return dist-1;
 }
 
-void expand_charts(const mesh_info &mi, edge_list &split_edges) {
+void expand_charts(const mesh_info &mi, edge_list &split_edges, chart_list &all_charts) {
     const aiMesh *mesh = mi.mesh;
     const edge_list el = mi.el;
     const raw_edge_face_map refm = mi.refm;
@@ -244,7 +244,7 @@ void expand_charts(const mesh_info &mi, edge_list &split_edges) {
         }
         if(i>=adj_faces.size()) {
             seed.push_back(f);
-            cout<<f<<"/"<<dists[f]<<" ";
+            //cout<<f<<"/"<<dists[f]<<" ";
         }
     }
     /*vector<int>::iterator it;
@@ -275,7 +275,7 @@ void expand_charts(const mesh_info &mi, edge_list &split_edges) {
         const aiFace *face = &mesh->mFaces[face_id];
         pop_heap(d_i_heap.begin(),d_i_heap.end());
         d_i_heap.pop_back();
-        cout<<"\n"<<boundaries.size()<<"--"<<d_i_heap.size()<<".."<<face_id<<"--"<<charts[face_id]<<"--"<<dists[face_id];
+        //cout<<"\n"<<boundaries.size()<<"--"<<d_i_heap.size()<<".."<<face_id<<"--"<<charts[face_id]<<"--"<<dists[face_id];
 
         for(int i=0; i<face->mNumIndices; i++) {
             int va,vb;
@@ -296,7 +296,7 @@ void expand_charts(const mesh_info &mi, edge_list &split_edges) {
             if(opp_face_id<0)
                 continue;
             if(charts[opp_face_id]<0) { /* if opp_face's chart is not defined */
-                cout<<"Z("<<opp_face_id<<")";
+                //cout<<"Z("<<opp_face_id<<")";
                 charts[opp_face_id] = charts[face_id];
                 //boundaries.erase(e);
                 d_i_heap.push_back(dist_index(dists[opp_face_id],opp_face_id));
@@ -320,7 +320,7 @@ void expand_charts(const mesh_info &mi, edge_list &split_edges) {
             else if( charts[opp_face_id] != charts[face_id] && dists[charts[face_id]]-dists[face_id] < merge_dist &&
                     dists[charts[opp_face_id]]-dists[opp_face_id] < merge_dist ) { /* merge two charts */
                 int c1 = charts[face_id];  int c2 = charts[opp_face_id];
-                cout<<"M("<<c1<<" "<<c2<<")("<<opp_face_id<<")";
+                //cout<<"M("<<c1<<" "<<c2<<")("<<opp_face_id<<")";
                 for(raw_edge_face_map::const_iterator it=refm.begin(); it!=refm.end(); it++) {
                     int fA = it->second.fA; int fB = it->second.fB;
                     if( (charts[fA]==c1 && charts[fB]==c2) || (charts[fA]==c2 && charts[fB]==c1) )
@@ -347,18 +347,37 @@ void expand_charts(const mesh_info &mi, edge_list &split_edges) {
 
     delete[] dists;
 
-    set<int> chart_ids;
-    int no_def_face = 0;
+    id_chart_map icm;
+    int num_no_def_face = 0;
     for(int f=0; f<f_num; f++) {
-        chart_ids.insert(charts[f]);
-        if(charts[f]<0)
-            no_def_face++;
+        if(charts[f]<0) {
+            num_no_def_face++;
+            continue;
+        }
+        aiFace *face = &mesh->mFaces[f];
+        id_chart_map::iterator it = icm.find(charts[f]);
+        if(it==icm.end()) {
+            chart c = chart(mi);
+            c.faces.insert(f);        
+            for(int i=0; i<face->mNumIndices; i++)
+                c.m_2_u.insert( map<int,int>::value_type(face->mIndices[i],c.m_2_u.size()) );
+            icm.insert( id_chart_map::value_type(charts[f],c) );
+        }
+        else {
+            for(int i=0; i<face->mNumIndices; i++)
+                it->second.m_2_u.insert( map<int,int>::value_type(face->mIndices[i],it->second.m_2_u.size()) );
+            it->second.faces.insert(f);
+        }
     }
-    cout<<"Number of charts: "<<chart_ids.size()<<endl;
-    cout<<no_def_face<<" faces belong to no charts"<<endl;
+    cout<<"Number of charts: "<<icm.size()<<endl;
+    if(num_no_def_face>0)
+        cout<<"ERROR: "<<num_no_def_face<<" faces belong to no charts"<<endl;
+    
+    for(id_chart_map::iterator it=icm.begin(); it!=icm.end(); it++)
+        all_charts.push_back(it->second);
 }
 
-void segment(const mesh_info &mi, edge_list &split_edges) {
+void segment(const mesh_info &mi, edge_list &split_edges, chart_list &all_charts) {
     const aiMesh *mesh = mi.mesh;
     const edge_face_map &efm = mi.efm;
     const edge_list &el = mi.el;
@@ -393,17 +412,28 @@ void segment(const mesh_info &mi, edge_list &split_edges) {
     expand_features(mi,edges,split_edges);
     cout<<"split line number: "<<split_edges.size()<<endl;
 
-    expand_charts(mi,split_edges);
+    /* if there are no split edges, then the whole mesh is a chart */
+    if(split_edges.empty()) {
+        chart c = chart(mi);
+        for(int f=0; f<mesh->mNumFaces; f++)
+            c.faces.insert(f);
+        for(int v=0; v<mesh->mNumVertices; v++)
+            c.m_2_u.insert(map<int,int>::value_type(v,v) );
+        all_charts.push_back(c);
+        return;
+    }
+
+    expand_charts(mi,split_edges,all_charts);
     cout<<"expand_charts() done"<<endl;
 }
 
-void scene_segment (const scene_info &si, scene_edge_list &result) {
-    if(result.size()>0)
+void scene_segment (const scene_info &si, scene_edge_list &boundaries, chart_list &all_charts) {
+    if(boundaries.size()>0)
         return;
     for(int m=0; m<si.sc->mNumMeshes; m++) {
         edge_list split_edges;
         mesh_info mi = mesh_info(si.sc->mMeshes[m], si.s_el[m], si.s_efm[m], si.s_refm[m], si.s_vem[m], si.s_fn[m]);
-        segment(mi, split_edges);
-        result.push_back(split_edges);
+        segment(mi, split_edges, all_charts);
+        boundaries.push_back(split_edges);
     }
 }

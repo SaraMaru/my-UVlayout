@@ -1085,6 +1085,8 @@ assimp/postprocess.h
 -
 FreeImage.h
 -
+Eigen/Dense
+/home/mjm/Documents/myUVlayout/Eigen/Dense
 
 /home/mjm/Documents/myUVlayout/packing.cpp
 my_header.h
@@ -1093,8 +1095,6 @@ my_header.h
 /home/mjm/Documents/myUVlayout/parameterization.cpp
 my_header.h
 /home/mjm/Documents/myUVlayout/my_header.h
-Eigen/Dense
-/home/mjm/Documents/myUVlayout/Eigen/Dense
 
 /home/mjm/Documents/myUVlayout/segmentation.cpp
 my_header.h

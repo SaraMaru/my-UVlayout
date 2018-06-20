@@ -20,6 +20,10 @@ void gen_edges (const aiMesh *mesh, edge_list &el)
 
     sort(el.begin(), el.end());  
     el.erase( unique(el.begin(), el.end()), el.end() ); /* erase duplicated elements */
+
+    /*cout<<"el:";
+    for(int i=0; i<el.size(); i++)
+        cout<<el[i].pA<<","<<el[i].pB<<" ";*/
 }
 
 void gen_edge_face_map (const aiMesh *mesh, const edge_list &el, edge_face_map &efm, raw_edge_face_map &raw_efm)

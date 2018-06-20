@@ -16,12 +16,12 @@ void gen_obj(const scene_info &si, scene_UV_list &all_UV) {
                 of<<"v "<<vertex->x<<" "<<vertex->y<<" "<<vertex->z<<endl;
             }
             for(int v=0; v<mesh->mNumVertices; v++) {
-                const aiVector3D *normal = &mesh->mNormals[v];
-                of<<"vn "<<normal->x<<" "<<normal->y<<" "<<normal->z<<endl;
-            }
-            for(int v=0; v<mesh->mNumVertices; v++) {
                 const aiVector2D *uv = &all_UV[m][v];
                 of<<"vt "<<uv->x<<" "<<uv->y<<endl;
+            }
+            for(int v=0; v<mesh->mNumVertices; v++) {
+                const aiVector3D *normal = &mesh->mNormals[v];
+                of<<"vn "<<normal->x<<" "<<normal->y<<" "<<normal->z<<endl;
             }
             of<<"s "<<m+1<<endl;
             of<<"g group"<<m+1<<endl;

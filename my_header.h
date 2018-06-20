@@ -15,13 +15,10 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include <FreeImage.h> /* for grab() */
+#include "Eigen/Dense"
 using namespace std;
 
 /* -------------------------------------------------------------------------------- */
-
-/*enum link_type {
-    NO_LINK, LINK_AA, LINK_AB, LINK_BA, LINK_BB
-};*/
 
 struct edge {
     int pA,pB;
@@ -54,17 +51,13 @@ struct seg_edge {
     edge e;
     float sharpness; //angle
     bool isChosen;
-    //bool islockedA;
-    //bool islockedB;
 
     seg_edge(edge ee) : e(ee) {
         isChosen = false;
-        //islockedA = islockedB = false;
     }
     seg_edge(edge ee, float s) : e(ee) {
         sharpness = s;
         isChosen = false;
-        //islockedA = islockedB = false;
     }
     int adjacentTo(const seg_edge &se) {
         if(e.pA==se.e.pA || e.pA==se.e.pB) {
@@ -77,25 +70,6 @@ struct seg_edge {
         }
         return -1;
     }
-    /*link_type canLinkTo(const seg_edge &se) {
-        if(se.islockedA || se.islockedB) //notice the || here (not &&)
-            return NO_LINK;
-        if(islockedA && islockedB)
-            return NO_LINK;
-        if(!se.islockedA) {
-            if(e.pA==se.e.pA && !islockedA)
-                return LINK_AA;
-            else if(e.pB==se.e.pA && !islockedB)
-                return LINK_BA;
-        }
-        if(!se.islockedB) {
-            if(e.pA==se.e.pB && !islockedA)
-                return LINK_AB;
-            else if(e.pB==se.e.pB && !islockedB)
-                return LINK_BB;
-        }
-        return NO_LINK;
-    }*/
 };
 
 struct face_pair {
@@ -187,14 +161,24 @@ struct scene_info {
         sc(sc), s_el(s_el), s_efm(s_efm), s_refm(s_refm), s_vem(s_vem), s_fn(s_fn) {}
 };
 
+struct chart {
+    const mesh_info mi;
+    set<int> faces;
+    map<int,int> m_2_u; /* mesh vertex id -> UV vertex id */
+    chart(const mesh_info &mi) : mi(mi) {}
+};
+
+typedef map<int,chart> id_chart_map;
+typedef vector<chart> chart_list;
+
 /* -------------------------------------------------------------------------------- */
 
 extern void gen_edges (const aiMesh *mesh, edge_list &el);
 extern void gen_edge_face_map (const aiMesh *mesh, const edge_list &el, edge_face_map &efm, raw_edge_face_map &raw_efm);
 extern void gen_vertex_edge_map (const edge_list &el, vertex_edge_map &vem);
 extern void gen_face_normals(const aiMesh *mesh, face_normals &fn);
-extern void scene_segment (const scene_info &si, scene_edge_list &result);
-extern void scene_parameterize (const scene_info &si, scene_UV_list &SUVL);
+extern void scene_segment (const scene_info &si, scene_edge_list &boundaries, chart_list &all_charts);
+extern void scene_parameterize (const scene_info &si, chart_list &all_charts, scene_UV_list &SUVL);
 extern void gen_obj(const scene_info &si, scene_UV_list &all_UV);
 
 /* -------------------------------------------------------------------------------- */
