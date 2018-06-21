@@ -425,7 +425,7 @@ void key(unsigned char k, int x, int y)
 		}
 		case 'p': { 
 			scene_parameterize( scene_info(scene,all_edges,all_efm,all_refm,all_vem,all_fn), all_charts, all_UV );
-			pack(all_charts,all_UV,packed_all_UV);
+			rectangle_pack(all_charts,all_UV,packed_all_UV);
 			break; 
 		}
 		case 'u': { b_UV_mode = !b_UV_mode; break; }

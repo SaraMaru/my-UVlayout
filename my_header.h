@@ -117,7 +117,11 @@ struct triangle {
 struct box {
     float min_u, width;
     float min_v, height;
-}
+};
+
+enum insert_mode {
+    INSERT_RIGHT, INSERT_TOP
+};
 
 /* -------------------------------------------------------------------------------- */
 
@@ -186,7 +190,7 @@ extern void gen_vertex_edge_map (const edge_list &el, vertex_edge_map &vem);
 extern void gen_face_normals(const aiMesh *mesh, face_normals &fn);
 extern void scene_segment (const scene_info &si, scene_edge_list &boundaries, chart_list &all_charts);
 extern void scene_parameterize (const scene_info &si, chart_list &all_charts, scene_UV_list &SUVL);
-extern void pack(const chart_list &ch, const scene_UV_list &scene_UV, scene_UV_list &result);
+extern void rectangle_pack(const chart_list &ch, const scene_UV_list &scene_UV, scene_UV_list &result);
 extern void gen_obj(const chart_list &all_charts, scene_UV_list &all_UV);
 
 /* -------------------------------------------------------------------------------- */
