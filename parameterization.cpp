@@ -34,7 +34,7 @@ void get_coordinates(const chart &ch, triangle *ts) {
         Vector3d v1v3 = v3-v1;
         ts[index].x3 = v1v3.dot(x_axis);
         Vector3d y_axis = trans(fn[index]).cross(x_axis);
-        y_axis.normalize();
+        y_axis.normalize(); //actually not needed
         ts[index].y3 = v1v3.dot(y_axis);
         std::cout<<"f"<<index<<": ("<<ts[index].x1<<","<<ts[index].y1<<") ("<<ts[index].x2<<","<<ts[index].y2<<") ("<<ts[index].x3<<","<<ts[index].y3<<")"<<std::endl;
         std::cout<<"fn: "<<trans(fn[index]).transpose()<<std::endl;
@@ -124,8 +124,8 @@ void parameterize(const chart &ch, UV_list &UV) {
     MatrixXd Mr = MatrixXd::Zero(f_num,v_num);
     MatrixXd Mi = MatrixXd::Zero(f_num,v_num);
 
-    for(int i=0; i<f_num; i++)
-        cout<<ts[i].x1<<" "<<ts[i].y1<<" "<<ts[i].x2<<" "<<ts[i].y2<<" "<<ts[i].x3<<" "<<ts[i].y3<<" "<<endl;
+    /*for(int i=0; i<f_num; i++)
+        cout<<ts[i].x1<<" "<<ts[i].y1<<" "<<ts[i].x2<<" "<<ts[i].y2<<" "<<ts[i].x3<<" "<<ts[i].y3<<" "<<endl;*/
 
     int f=0;
     for(set<int>::const_iterator it=ch.faces.begin(); it!=ch.faces.end(); it++) {
@@ -186,6 +186,7 @@ void parameterize(const chart &ch, UV_list &UV) {
               Mpi, Mpr;
     MatrixXd Up(4,1);
     Up << -max_dist/2,max_dist/2,-max_dist/2,max_dist/2;
+    //Up << 0,1,0,1;
     MatrixXd b = -b_left*Up; /* b is 2*f_num X 1 */
     std::cout<<"A and b done"<<std::endl;
     std::cout<<"A: "<<A<<endl;

@@ -114,6 +114,11 @@ struct triangle {
     float x3, y3;
 };
 
+struct box {
+    float min_u, width;
+    float min_v, height;
+}
+
 /* -------------------------------------------------------------------------------- */
 
 typedef vector<edge> edge_list; /* edges of a mesh */
@@ -134,6 +139,8 @@ typedef vector<face_normals> scene_face_normals;
 
 typedef aiVector2D* UV_list;
 typedef vector<UV_list> scene_UV_list;
+
+typedef vector<box> box_list;
 
 /* -------------------------------------------------------------------------------- */
 
@@ -179,7 +186,8 @@ extern void gen_vertex_edge_map (const edge_list &el, vertex_edge_map &vem);
 extern void gen_face_normals(const aiMesh *mesh, face_normals &fn);
 extern void scene_segment (const scene_info &si, scene_edge_list &boundaries, chart_list &all_charts);
 extern void scene_parameterize (const scene_info &si, chart_list &all_charts, scene_UV_list &SUVL);
-extern void gen_obj(const scene_info &si, scene_UV_list &all_UV);
+extern void pack(const chart_list &ch, const scene_UV_list &scene_UV, scene_UV_list &result);
+extern void gen_obj(const chart_list &all_charts, scene_UV_list &all_UV);
 
 /* -------------------------------------------------------------------------------- */
 

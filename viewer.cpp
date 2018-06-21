@@ -28,6 +28,7 @@ scene_face_normals all_fn;
 scene_edge_list all_split_edges;
 chart_list all_charts;
 scene_UV_list all_UV;
+scene_UV_list packed_all_UV;
 
 float eye[] = { 0.f, 0.f, 3.f };
 float center[] = { 0.f, 0.f, -5.f };
@@ -287,8 +288,8 @@ void draw_UVs() {
 	glColor3f(0.0,1.0,0.0);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-	for(int c=0; c<all_UV.size(); c++) {
-		const UV_list UV = all_UV[c];
+	for(int c=0; c<packed_all_UV.size(); c++) {
+		const UV_list UV = packed_all_UV[c];
 		const chart *cp = &all_charts[c];
 		const aiMesh* mesh = cp->mi.mesh;
 		for(set<int>::const_iterator it=cp->faces.begin(); it!=cp->faces.end(); it++) {
@@ -305,7 +306,6 @@ void draw_UVs() {
 
 	glColor3f(1.0,1.0,1.0);
 	glEnable(GL_LIGHTING);
-
 }
 
 /* ---------------------------------------------------------------------------- */
@@ -377,7 +377,7 @@ void display(void)
         /* center the model */
 	glTranslatef( -scene_center.x, -scene_center.y, -scene_center.z );
 
-	if(b_UV_mode && all_UV.size()>0) {
+	if(b_UV_mode && packed_all_UV.size()>0) {
 		draw_UVs();
 	}
 	else {
@@ -419,11 +419,18 @@ void key(unsigned char k, int x, int y)
 	    case 'c': { eye[2]+=0.025; center[2]+=0.1; break; }
         case ' ': { b_rotate = !b_rotate; prev_time = glutGet(GLUT_ELAPSED_TIME); break; }
 		case 'l': { b_line_mode = !b_line_mode; break; }
-	    case 'e': { scene_segment( scene_info(scene,all_edges,all_efm,all_refm,all_vem,all_fn) ,all_split_edges, all_charts ); break; }
-		case 'p': { scene_parameterize( scene_info(scene,all_edges,all_efm,all_refm,all_vem,all_fn), all_charts, all_UV ); break; }
+	    case 'e': { 
+			scene_segment( scene_info(scene,all_edges,all_efm,all_refm,all_vem,all_fn) ,all_split_edges, all_charts ); 
+			break; 
+		}
+		case 'p': { 
+			scene_parameterize( scene_info(scene,all_edges,all_efm,all_refm,all_vem,all_fn), all_charts, all_UV );
+			pack(all_charts,all_UV,packed_all_UV);
+			break; 
+		}
 		case 'u': { b_UV_mode = !b_UV_mode; break; }
 	    case 'g': { grab("test.png"); break; }
-		case 'o': { gen_obj( scene_info(scene,all_edges,all_efm,all_refm,all_vem,all_fn), all_UV ); break; }
+		case 'o': { gen_obj( all_charts, packed_all_UV ); break; }
     }
 }
 
