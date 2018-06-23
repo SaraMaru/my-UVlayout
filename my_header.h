@@ -16,6 +16,7 @@
 #include <assimp/postprocess.h>
 #include <FreeImage.h> /* for grab() */
 #include "Eigen/Dense"
+#include "Eigen/Sparse"
 using namespace std;
 
 /* -------------------------------------------------------------------------------- */
@@ -108,19 +109,13 @@ struct dist_index {
     }
 };
 
-struct triangle {
-    float x1=0, y1=0;
-    float x2, y2=0;
-    float x3, y3;
-};
-
 struct box {
     float min_u, width;
     float min_v, height;
 };
 
 enum insert_mode {
-    INSERT_RIGHT, INSERT_TOP
+    INSERT_RIGHT, INSERT_TOP, INSERT_RIGHT_TOP
 };
 
 /* -------------------------------------------------------------------------------- */
@@ -143,6 +138,8 @@ typedef vector<face_normals> scene_face_normals;
 
 typedef aiVector2D* UV_list;
 typedef vector<UV_list> scene_UV_list;
+
+typedef Eigen::Vector2d triangle[3];
 
 typedef vector<box> box_list;
 

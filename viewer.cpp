@@ -288,6 +288,13 @@ void draw_UVs() {
 	glColor3f(0.0,1.0,0.0);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
+	glBegin(GL_POLYGON);
+	glVertex3f(0.f,0.f,0.f);
+	glVertex3f(1.f,0.f,0.f);
+	glVertex3f(1.f,1.f,0.f);
+	glVertex3f(0.f,1.f,0.f);
+	glEnd();
+
 	for(int c=0; c<packed_all_UV.size(); c++) {
 		const UV_list UV = packed_all_UV[c];
 		const chart *cp = &all_charts[c];
@@ -297,7 +304,7 @@ void draw_UVs() {
 			glBegin(GL_TRIANGLES);  
 			for(unsigned int i = 0; i < face->mNumIndices; i++) {
 				int new_id = cp->m_2_u.find(face->mIndices[i])->second;
-				//cout<<new_id<<"i ";
+				//cout<<" i "<<new_id<<" u "<<UV[new_id].x<<" v "<<UV[new_id].y;
 				glVertex3f(UV[new_id].x,UV[new_id].y,0);
 			}
 			glEnd();
@@ -361,23 +368,29 @@ void display(void)
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	
-	gluLookAt(eye[0], eye[1], eye[2],
-		center[0], center[1], center[2],
-		0.f, 1.f, 0.f);
+	if(b_UV_mode) {
+		gluLookAt(0.5f, 0.5f, 1.5f,
+			0.5f, 0.5f, -2.f,
+			0.f, 1.f, 0.f);
+	}
+	else {
+		gluLookAt(eye[0], eye[1], eye[2],
+			center[0], center[1], center[2],
+			0.f, 1.f, 0.f);
+		glRotatef(angle,0.f,1.f,0.f); /* rotate it around the y axis */
 
-	glRotatef(angle,0.f,1.f,0.f); /* rotate it around the y axis */
+		/* scale the whole asset to fit into our view frustum */
+		tmp = scene_max.x-scene_min.x;
+		tmp = aisgl_max(scene_max.y - scene_min.y,tmp);
+		tmp = aisgl_max(scene_max.z - scene_min.z,tmp);
+		tmp = 1.f / tmp;
+		glScalef(tmp, tmp, tmp);
 
-	/* scale the whole asset to fit into our view frustum */
-	tmp = scene_max.x-scene_min.x;
-	tmp = aisgl_max(scene_max.y - scene_min.y,tmp);
-	tmp = aisgl_max(scene_max.z - scene_min.z,tmp);
-	tmp = 1.f / tmp;
-	glScalef(tmp, tmp, tmp);
-
-        /* center the model */
-	glTranslatef( -scene_center.x, -scene_center.y, -scene_center.z );
-
-	if(b_UV_mode && packed_all_UV.size()>0) {
+		/* center the model */
+		glTranslatef( -scene_center.x, -scene_center.y, -scene_center.z );
+	}
+	
+	if(b_UV_mode) {
 		draw_UVs();
 	}
 	else {
@@ -411,14 +424,14 @@ void key(unsigned char k, int x, int y)
 	switch(k)
 	{
 	    case 27: { exit(0); break; } /* press esc to quit */
-        case 'a': { eye[0]+=0.05; center[0]+=0.1; break; }
-	    case 'd': { eye[0]-=0.05; center[0]-=0.1; break; }
-    	case 'w': { eye[1]-=0.05; center[1]-=0.1; break; }
-	    case 's': { eye[1]+=0.05; center[1]+=0.1; break; }
-	    case 'z': { eye[2]-=0.025; center[2]-=0.1; break; }
-	    case 'c': { eye[2]+=0.025; center[2]+=0.1; break; }
-        case ' ': { b_rotate = !b_rotate; prev_time = glutGet(GLUT_ELAPSED_TIME); break; }
-		case 'l': { b_line_mode = !b_line_mode; break; }
+        case 'a': { if(!b_UV_mode) {eye[0]+=0.05; center[0]+=0.1;} break; }
+	    case 'd': { if(!b_UV_mode) {eye[0]-=0.05; center[0]-=0.1;} break; }
+    	case 'w': { if(!b_UV_mode) {eye[1]-=0.05; center[1]-=0.1;} break; }
+	    case 's': { if(!b_UV_mode) {eye[1]+=0.05; center[1]+=0.1;} break; }
+	    case 'z': { if(!b_UV_mode) {eye[2]-=0.025; center[2]-=0.1;} break; }
+	    case 'c': { if(!b_UV_mode) {eye[2]+=0.025; center[2]+=0.1;} break; }
+        case ' ': { if(!b_UV_mode) {b_rotate = !b_rotate; prev_time = glutGet(GLUT_ELAPSED_TIME);} break; }
+		case 'l': { if(!b_UV_mode) {b_line_mode = !b_line_mode;} break; }
 	    case 'e': { 
 			scene_segment( scene_info(scene,all_edges,all_efm,all_refm,all_vem,all_fn) ,all_split_edges, all_charts ); 
 			break; 

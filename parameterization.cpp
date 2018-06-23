@@ -26,30 +26,59 @@ void get_coordinates(const chart &ch, triangle *ts) {
         if(ch.faces.find(f)==ch.faces.end())
             continue;
         const aiFace *face = &mesh->mFaces[f];
+        for(int i=0; i<3; i++) {
+            Vector3d v1 = trans(mesh->mVertices[face->mIndices[i]]);
+            Vector3d v2 = trans(mesh->mVertices[face->mIndices[(i+1)%3]]);
+            Vector3d v3 = trans(mesh->mVertices[face->mIndices[(i+2)%3]]);
+            Vector3d x_axis = v2-v1;
+            x_axis.normalize();
+            Vector3d y_axis = trans(fn[index]).cross(x_axis);
+            y_axis.normalize(); //actually not needed
+            Vector3d v1v3 = v3-v1;
+            float x = v1v3.dot(x_axis);
+            float y = v1v3.dot(y_axis);
+            ts[index][(i+2)%3] = Vector2d(x,y);
+        }
+        /*std::cout<<"f"<<index<<": ("<<ts[index][0].transpose()<<") ("<<ts[index][1].transpose()<<") ("
+            <<ts[index][2].transpose()<<")"<<std::endl;
+        std::cout<<"fn: "<<trans(fn[index]).transpose()<<std::endl;*/
+        index++;
+    }
+}
+
+void old_get_coordinates(const chart &ch, triangle *ts) {
+    const aiMesh *mesh = ch.mi.mesh;
+    face_normals fn = ch.mi.fn;
+    int index = 0;
+    for(int f=0; f<mesh->mNumFaces; f++) {
+        if(ch.faces.find(f)==ch.faces.end())
+            continue;
+        const aiFace *face = &mesh->mFaces[f];
         Vector3d v1 = trans(mesh->mVertices[face->mIndices[0]]);
         Vector3d v2 = trans(mesh->mVertices[face->mIndices[1]]);
         Vector3d v3 = trans(mesh->mVertices[face->mIndices[2]]);
-        ts[index].x2 = dist(v1,v2);
-        Vector3d x_axis = (v2-v1) / ts[index].x2;
+        ts[index][0][0] = ts[index][0][1] = ts[index][1][1] = 0;
+        ts[index][1][0] = dist(v1,v2);
+        Vector3d x_axis = (v2-v1) / ts[index][1][0];
         Vector3d v1v3 = v3-v1;
-        ts[index].x3 = v1v3.dot(x_axis);
+        ts[index][2][0] = v1v3.dot(x_axis);
         Vector3d y_axis = trans(fn[index]).cross(x_axis);
         y_axis.normalize(); //actually not needed
-        ts[index].y3 = v1v3.dot(y_axis);
-        std::cout<<"f"<<index<<": ("<<ts[index].x1<<","<<ts[index].y1<<") ("<<ts[index].x2<<","<<ts[index].y2<<") ("<<ts[index].x3<<","<<ts[index].y3<<")"<<std::endl;
-        std::cout<<"fn: "<<trans(fn[index]).transpose()<<std::endl;
+        ts[index][2][1] = v1v3.dot(y_axis);
+        //std::cout<<"f"<<index<<": ("<<ts[index][0][0]<<","<<ts[index][0][1]<<") ("<<ts[index][1][0]<<","<<ts[index][1][1]<<") ("<<ts[index][2][0]<<","<<ts[index][2][1]<<")"<<std::endl;
+        //std::cout<<"fn: "<<trans(fn[index]).transpose()<<std::endl;
         index++;
     }
     /*for(int f=0; f<mesh->mNumFaces; f++) {
         if(ch.faces.find(f)==ch.faces.end())
             continue;
         const aiFace *face = &mesh->mFaces[f];
-        ts[index].x1 = mesh->mVertices[face->mIndices[0]].x;
-        ts[index].y1 = mesh->mVertices[face->mIndices[0]].y;
-        ts[index].x2 = mesh->mVertices[face->mIndices[1]].x;
-        ts[index].y2 = mesh->mVertices[face->mIndices[1]].y;
-        ts[index].x3 = mesh->mVertices[face->mIndices[2]].x;
-        ts[index].y3 = mesh->mVertices[face->mIndices[2]].y;
+        ts[index][0][0] = mesh->mVertices[face->mIndices[0]][0];
+        ts[index][0][1] = mesh->mVertices[face->mIndices[0]][1];
+        ts[index][1][0] = mesh->mVertices[face->mIndices[1]][0];
+        ts[index][1][1] = mesh->mVertices[face->mIndices[1]][1];
+        ts[index][2][0] = mesh->mVertices[face->mIndices[2]][0];
+        ts[index][2][1] = mesh->mVertices[face->mIndices[2]][1];
         index++;
     }*/
 }
@@ -93,15 +122,15 @@ double find_pinned_vertices(const chart &ch, int &a, int &b) {
             a = min_z_id;  b = max_z_id; max_dist = dist_z;
         }
     }
+    std::cout<<"NO."<<a<<": "<<trans(mesh->mVertices[a]).transpose()<<endl;
+    std::cout<<"NO."<<b<<": "<<trans(mesh->mVertices[b]).transpose()<<endl;
+    a = ch.m_2_u.find(a)->second;
+    b = ch.m_2_u.find(b)->second;
     if(a>b) {
         int tmp = b;
         b = a;
         a = tmp;
     }
-    std::cout<<"NO."<<a<<": "<<trans(mesh->mVertices[a]).transpose()<<endl;
-    std::cout<<"NO."<<b<<": "<<trans(mesh->mVertices[b]).transpose()<<endl;
-    a = ch.m_2_u.find(a)->second;
-    b = ch.m_2_u.find(b)->second;
     std::cout<<"new id: "<<a<<" and "<<b<<endl;
     return max_dist;
 }
@@ -116,88 +145,82 @@ void parameterize(const chart &ch, UV_list &UV) {
     get_coordinates(ch,ts);
     std::cout<<"get_coordinates() done"<<std::endl;
 
-    /*if(f_num==1) {
-        UV = new aiVector2D[3];
-        return;
-    }*/
-
-    MatrixXd Mr = MatrixXd::Zero(f_num,v_num);
-    MatrixXd Mi = MatrixXd::Zero(f_num,v_num);
-
-    /*for(int i=0; i<f_num; i++)
-        cout<<ts[i].x1<<" "<<ts[i].y1<<" "<<ts[i].x2<<" "<<ts[i].y2<<" "<<ts[i].x3<<" "<<ts[i].y3<<" "<<endl;*/
-
-    int f=0;
-    for(set<int>::const_iterator it=ch.faces.begin(); it!=ch.faces.end(); it++) {
-        const aiFace *face = &mesh->mFaces[*it];
-        triangle t = ts[f];
-        double sqrt_dt = sqrt( (t.x1*t.y2 - t.y1*t.x2) + (t.x2*t.y3 - t.y2*t.x3) + (t.x3*t.y1 - t.y3*t.x1) );
-        int v0 = ch.m_2_u.find(face->mIndices[0])->second;
-        int v1 = ch.m_2_u.find(face->mIndices[1])->second;
-        int v2 = ch.m_2_u.find(face->mIndices[2])->second;
-        cout<<v0<<" "<<v1<<" "<<v2<<endl;
-        Mr(f,v0) = (t.x3 - t.x2) / sqrt_dt;
-        Mr(f,v1) = (t.x1 - t.x3) / sqrt_dt;
-        Mr(f,v2) = (t.x2 - t.x1) / sqrt_dt;
-        Mi(f,v0) = (t.y3 - t.y2) / sqrt_dt;
-        Mi(f,v1) = (t.y1 - t.y3) / sqrt_dt;
-        Mi(f,v2) = (t.y2 - t.y1) / sqrt_dt;
-        f++;
-    }
-    std::cout<<"M done"<<std::endl;
-    std::cout<<"Mr: "<<Mr<<endl;
-    std::cout<<"Mi: "<<Mi<<endl;
-
     int id1,id2;
     double max_dist = find_pinned_vertices(ch, id1, id2);
     std::cout<<"find_pinned_vertices() done"<<std::endl;
     std::cout<<"max_dist: "<<max_dist<<endl;
 
-    MatrixXd Mpr(f_num,2);
-    Mpr<<Mr.col(id1),Mr.col(id2);
-    //std::cout<<"A"<<std::endl;
-    MatrixXd Mpi(f_num,2);
-    Mpi<<Mi.col(id1),Mi.col(id2);
-    //std::cout<<"B"<<std::endl;
-    MatrixXd Mfr = MatrixXd::Zero(f_num,v_num-2);
-    MatrixXd Mfi = MatrixXd::Zero(f_num,v_num-2);
-    //std::cout<<"C"<<id1<<std::endl;
-    if(id1>0) {
-        Mfr.block(0,0,f_num,id1) = Mr.block(0,0,f_num,id1);
-        Mfi.block(0,0,f_num,id1) = Mi.block(0,0,f_num,id1);
+    typedef Triplet<double> T;
+    std::vector<T> A_tripletList, b_left_tripletList;
+    int f=0;
+    for(set<int>::const_iterator it=ch.faces.begin(); it!=ch.faces.end(); it++) {
+        const aiFace *face = &mesh->mFaces[*it];
+        triangle t = ts[f];
+        double dt = (t[0][0]*t[1][1] - t[0][1]*t[1][0]) + (t[1][0]*t[2][1] - t[1][1]*t[2][0]) + (t[2][0]*t[0][1] - t[2][1]*t[0][0]);
+        double co = dt>0? 1/sqrt(dt) : -1/(sqrt(-dt));
+        for(int i=0; i<3; i++) {
+            int j = (i+1)%3;  int k = (i+2)%3;
+            int v0 = ch.m_2_u.find(face->mIndices[i])->second;
+            double real,image;
+            if(dt>0) {
+                real = (t[k][0] - t[j][0]) * co;
+                image = (t[k][1] - t[j][1]) * co;
+            }
+            else {
+                real = (t[j][1] - t[k][1]) * co;
+                image = (t[k][0] - t[j][0]) * co;
+            }
+            if(v0==id1 || v0==id2) {
+                int col = v0==id1? 0 : 1;
+                b_left_tripletList.push_back(T(f,col,real));
+                b_left_tripletList.push_back(T(f,2+col,-image));
+                b_left_tripletList.push_back(T(f_num+f,col,image));
+                b_left_tripletList.push_back(T(f_num+f,2+col,real));
+            }
+            else {
+                if(v0>id2) v0-=2;
+                else if(v0>id1) v0-=1;
+                A_tripletList.push_back(T(f,v0,real));
+                A_tripletList.push_back(T(f,v_num-2+v0,-image));
+                A_tripletList.push_back(T(f_num+f,v0,image));
+                A_tripletList.push_back(T(f_num+f,v_num-2+v0,real));
+            }
+        }
+        f++;
     }
-    //std::cout<<"D"<<id2<<std::endl;
-    if(id2>id1+1) {
-        Mfr.block(0,id1,f_num,id2-id1-1) = Mr.block(0,id1+1,f_num,id2-id1-1);
-        Mfi.block(0,id1,f_num,id2-id1-1) = Mi.block(0,id1+1,f_num,id2-id1-1);
-    }
-    //std::cout<<"E"<<std::endl;
-    if(id2<f_num-1) {
-        Mfr.block(0,id2-1,f_num,v_num-1-id2) = Mr.block(0,id2+1,f_num,v_num-1-id2);
-        Mfi.block(0,id2-1,f_num,v_num-1-id2) = Mi.block(0,id2+1,f_num,v_num-1-id2);
-    }
-    //std::cout<<"F"<<std::endl;
+    /*for(int i=0;i<A_tripletList.size();i++)
+        std::cout<<A_tripletList[i].row()<<" "<<A_tripletList[i].col()<<" "<<A_tripletList[i].value()<<std::endl;*/
+    SparseMatrix<double> A(2*f_num,2*(v_num-2));
+    A.setFromTriplets(A_tripletList.begin(), A_tripletList.end());
+    std::cout<<"A done"<<std::endl;
+    
+    std::vector<T> Up_tripletList;
+    Up_tripletList.push_back(T(0,0,-max_dist/2));  Up_tripletList.push_back(T(1,0,max_dist/2));
+    Up_tripletList.push_back(T(2,0,-max_dist/2));  Up_tripletList.push_back(T(3,0,max_dist/2));
+    SparseMatrix<double> Up(4,1);
+    Up.setFromTriplets(Up_tripletList.begin(), Up_tripletList.end());
+    std::cout<<"Up done"<<std::endl;
+    /*for(int i=0;i<b_left_tripletList.size();i++)
+        std::cout<<b_left_tripletList[i].row()<<" "<<b_left_tripletList[i].col()<<" "<<b_left_tripletList[i].value()<<std::endl;*/
+    SparseMatrix<double> b_left(2*f_num,4);
+    b_left.setFromTriplets(b_left_tripletList.begin(), b_left_tripletList.end());
+    std::cout<<"b_left done"<<std::endl;
+    SparseMatrix<double> b = -b_left*Up; /* b is 2*f_num X 1 */
+    std::cout<<"b done"<<std::endl;
+    //std::cout<<"A: "<<A<<endl;
+    //std::cout<<"b_left: "<<b_left<<endl;
+    //std::cout<<"b: "<<b<<endl;
 
-    MatrixXd A(2*f_num,2*(v_num-2));
-    A << Mfr, -Mfi,
-         Mfi, Mfr;
-    MatrixXd b_left(2*f_num,4);
-    b_left << Mpr, -Mpi,
-              Mpi, Mpr;
-    MatrixXd Up(4,1);
-    Up << -max_dist/2,max_dist/2,-max_dist/2,max_dist/2;
-    //Up << 0,1,0,1;
-    MatrixXd b = -b_left*Up; /* b is 2*f_num X 1 */
-    std::cout<<"A and b done"<<std::endl;
-    std::cout<<"A: "<<A<<endl;
-    std::cout<<"b_left: "<<b_left<<endl;
-    std::cout<<"b: "<<b<<endl;
-
-    MatrixXd X = (A.transpose()*A).inverse() * (A.transpose()) * b; /* X is 2*(v_num-2) X 1 */
+    /* AX = B */
+    LeastSquaresConjugateGradient< SparseMatrix<double> > lscg;
+    lscg.compute(A);
+    std::cout<<"compute(A) done"<<std::endl;
+    VectorXd X = lscg.solve(b); /* X is 2*(v_num-2) X 1 */
+    std::cout<<"X done"<<std::endl;
 
     UV = new aiVector2D[v_num];
-    UV[id1] = aiVector2D(Up(0),Up(2));
-    UV[id2] = aiVector2D(Up(1),Up(3));
+    UV[id1] = aiVector2D(-max_dist/2,-max_dist/2);
+    UV[id2] = aiVector2D(max_dist/2,max_dist/2);
     int UVid = 0;
     for(int index = 0; index<v_num-2; index++) {
         while(UVid==id1 || UVid==id2) {
