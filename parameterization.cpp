@@ -213,6 +213,7 @@ void parameterize(const chart &ch, UV_list &UV) {
 
     /* AX = B */
     LeastSquaresConjugateGradient< SparseMatrix<double> > lscg;
+    lscg.setMaxIterations(v_num/5); //default is twice the number of columns of the matrix
     lscg.compute(A);
     std::cout<<"compute(A) done"<<std::endl;
     VectorXd X = lscg.solve(b); /* X is 2*(v_num-2) X 1 */
