@@ -32,6 +32,8 @@ scene_UV_list packed_all_UV;
 
 float eye[] = { 0.f, 0.f, 3.f };
 float center[] = { 0.f, 0.f, -5.f };
+float UV_eye[] = { 0.5f, 0.5f, 1.5f };
+float UV_center[] = { 0.5f, 0.5f, -2.f, };
 
 /* current rotation angle */
 static float angle = 0.0f;
@@ -369,8 +371,8 @@ void display(void)
 	glLoadIdentity();
 	
 	if(b_UV_mode) {
-		gluLookAt(0.5f, 0.5f, 1.5f,
-			0.5f, 0.5f, -2.f,
+		gluLookAt(UV_eye[0], UV_eye[1], UV_eye[2],
+			UV_center[0], UV_center[1], UV_center[2],
 			0.f, 1.f, 0.f);
 	}
 	else {
@@ -424,12 +426,12 @@ void key(unsigned char k, int x, int y)
 	switch(k)
 	{
 	    case 27: { exit(0); break; } /* press esc to quit */
-        case 'a': { if(!b_UV_mode) {eye[0]+=0.05; center[0]+=0.1;} break; }
-	    case 'd': { if(!b_UV_mode) {eye[0]-=0.05; center[0]-=0.1;} break; }
-    	case 'w': { if(!b_UV_mode) {eye[1]-=0.05; center[1]-=0.1;} break; }
-	    case 's': { if(!b_UV_mode) {eye[1]+=0.05; center[1]+=0.1;} break; }
-	    case 'z': { if(!b_UV_mode) {eye[2]-=0.025; center[2]-=0.1;} break; }
-	    case 'c': { if(!b_UV_mode) {eye[2]+=0.025; center[2]+=0.1;} break; }
+        case 'a': { if(!b_UV_mode) {eye[0]+=0.05; center[0]+=0.05;} else {UV_eye[0]+=0.05; UV_center[0]+=0.05;} break; }
+	    case 'd': { if(!b_UV_mode) {eye[0]-=0.05; center[0]-=0.05;} else {UV_eye[0]-=0.05; UV_center[0]-=0.05;} break; }
+    	case 'w': { if(!b_UV_mode) {eye[1]-=0.05; center[1]-=0.05;} else {UV_eye[1]-=0.05; UV_center[1]-=0.05;} break; }
+	    case 's': { if(!b_UV_mode) {eye[1]+=0.05; center[1]+=0.05;} else {UV_eye[1]+=0.05; UV_center[1]+=0.05;} break; }
+	    case 'z': { if(!b_UV_mode) {eye[2]-=0.05; center[2]-=0.05;} else {UV_eye[2]-=0.05; UV_center[2]-=0.05;} break; }
+	    case 'c': { if(!b_UV_mode) {eye[2]+=0.05; center[2]+=0.05;} else {UV_eye[2]+=0.05; UV_center[2]+=0.05;} break; }
         case ' ': { if(!b_UV_mode) {b_rotate = !b_rotate; prev_time = glutGet(GLUT_ELAPSED_TIME);} break; }
 		case 'l': { if(!b_UV_mode) {b_line_mode = !b_line_mode;} break; }
 	    case 'e': { 

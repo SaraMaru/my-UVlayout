@@ -25,6 +25,7 @@ ADD_EXECUTABLE(
   parameterization.cpp
   packing.cpp
   gen_obj.cpp
+  OpenNL_psm.c
 )
 
 TARGET_LINK_LIBRARIES(
@@ -32,7 +33,9 @@ TARGET_LINK_LIBRARIES(
   ${OPENGL_LIBRARIES}
   ${GLUT_LIBRARIES}
   assimp
-  freeimage 
+  freeimage
+  dl
+  m 
 )
 
 INSTALL( 
