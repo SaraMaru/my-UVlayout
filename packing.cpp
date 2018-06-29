@@ -10,10 +10,10 @@ void get_bounding_box_for_UV(const UV_list UV, int len, box& b) {
     min_u = min_v = VERY_BIG_NUMBER;
 
     for(int i=0; i<len; i++) {
-        if(UV[i].x>max_u) max_u = UV[i].x;
-        if(UV[i].x<min_u) min_u = UV[i].x;
-        if(UV[i].y>max_v) max_v = UV[i].y;
-        if(UV[i].y<min_v) min_v = UV[i].y;
+        if(UV[i].x()>max_u) max_u = UV[i].x();
+        if(UV[i].x()<min_u) min_u = UV[i].x();
+        if(UV[i].y()>max_v) max_v = UV[i].y();
+        if(UV[i].y()<min_v) min_v = UV[i].y();
     }
 
     b.min_u = min_u;
@@ -36,10 +36,10 @@ void fit_in_a_box(int len, const box &old_box, const UV_list &old_UV, const box 
     float old_min_v = old_box.min_v;
     float height_ratio = (1-2*margin)*new_box.height / old_box.height;
     float width_ratio = (1-2*margin)*new_box.width / old_box.width;
-    new_UV = new aiVector2D[len];
+    new_UV = new Eigen::Vector2d[len];
     for(int i=0; i<len; i++) {
-        new_UV[i].x = (old_UV[i].x - old_min_u) * width_ratio + new_min_u;
-        new_UV[i].y = (old_UV[i].y - old_min_v) * height_ratio + new_min_v;
+        new_UV[i].x() = (old_UV[i].x() - old_min_u) * width_ratio + new_min_u;
+        new_UV[i].y() = (old_UV[i].y() - old_min_v) * height_ratio + new_min_v;
     }
 }
 
@@ -56,7 +56,7 @@ void rectangle_pack(const chart_list &cl, const scene_UV_list &all_UV, scene_UV_
     for(int c=0; c<chart_num; c++) {
         is_in[c] = false;
         box b;
-        get_bounding_box_for_UV(all_UV[c],cl[c].m_2_u.size(),b);
+        get_bounding_box_for_UV(all_UV[c],cl[c].vertices.size(),b);
         old_bl.push_back(b);
         new_bl.push_back(b);
         cout<<"box "<<c<<": "<<b.min_u<<"~"<<b.min_u+b.width<<" "<<b.min_v<<"~"<<b.min_v+b.height<<endl;
@@ -147,7 +147,7 @@ void rectangle_pack(const chart_list &cl, const scene_UV_list &all_UV, scene_UV_
 
     for(int c=0; c<chart_num; c++) {
         UV_list UV;
-        fit_in_a_box(cl[c].m_2_u.size(),old_bl[c],all_UV[c],new_bl[c],UV);
+        fit_in_a_box(cl[c].vertices.size(),old_bl[c],all_UV[c],new_bl[c],UV);
         result.push_back(UV);
     }
     cout<<"rectangle_pack() done"<<endl;

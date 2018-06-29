@@ -114,10 +114,11 @@ void expand_features(const mesh_info &mi, seg_edge_list &edges, edge_list &resul
     const vertex_edge_map &vem = mi.vem;
     const int v_num = mi.mesh->mNumVertices;
     bool *is_locked = new bool[v_num];
-    //cout<<"v_num:"<<v_num<<endl;
     for(int i=0; i<v_num; i++)
         is_locked[i] = false;
     int sum = 0;
+
+    cout<<"feature curve length: ";
     for(seg_edge_list::iterator it = edges.begin(); it != edges.end(); it++) {
         if(!it->isChosen)
             continue;
@@ -141,7 +142,7 @@ void expand_features(const mesh_info &mi, seg_edge_list &edges, edge_list &resul
                 break;
         } while(max_sharpness > max_string_length*threshold_two);
         
-        cout<<"_"<<feature.size()<<"_ ";
+        cout<<" "<<feature.size()<<" ";
         if(feature.size()>min_feature_length) {
             for(vector<int>::iterator itt = feature.begin(); itt != feature.end(); itt++) {
                 result.push_back(edges[*itt].e);
@@ -155,8 +156,9 @@ void expand_features(const mesh_info &mi, seg_edge_list &edges, edge_list &resul
             }
         }
     }
+
     delete[] is_locked;
-    cout<<"split line numbers before connecting: "<<sum<<endl;
+    cout<<endl<<"split line numbers before connecting: "<<sum<<endl;
 }
 
 int calc_feature_dists(const mesh_info &mi, const edge_list &split_edges, int* dists) {
@@ -358,15 +360,27 @@ void expand_charts(const mesh_info &mi, edge_list &split_edges, chart_list &all_
         id_chart_map::iterator it = icm.find(charts[f]);
         if(it==icm.end()) {
             chart c = chart(mi);
-            c.faces.insert(f);        
-            for(int i=0; i<face->mNumIndices; i++)
-                c.m_2_u.insert( map<int,int>::value_type(face->mIndices[i],c.m_2_u.size()) );
+            for(int i=0; i<face->mNumIndices; i++) {
+                c.m_2_c.insert( map<int,int>::value_type(face->mIndices[i],i) );
+                c.vertices.push_back(face->mIndices[i]);
+            }
+            chart_face cf = chart_face( c.m_2_c.find(face->mIndices[0])->second, 
+                    c.m_2_c.find(face->mIndices[1])->second, c.m_2_c.find(face->mIndices[2])->second );
+            c.faces.push_back(cf);        
             icm.insert( id_chart_map::value_type(charts[f],c) );
         }
         else {
-            for(int i=0; i<face->mNumIndices; i++)
-                it->second.m_2_u.insert( map<int,int>::value_type(face->mIndices[i],it->second.m_2_u.size()) );
-            it->second.faces.insert(f);
+            for(int i=0; i<face->mNumIndices; i++) {
+                int index = face->mIndices[i];
+                map<int,int>::iterator iter = it->second.m_2_c.find(index);
+                if(iter==it->second.m_2_c.end()) {
+                    it->second.m_2_c.insert( map<int,int>::value_type(index,it->second.vertices.size()) );
+                    it->second.vertices.push_back(index);
+                }
+            }
+            chart_face cf = chart_face( it->second.m_2_c.find(face->mIndices[0])->second, 
+                    it->second.m_2_c.find(face->mIndices[1])->second, it->second.m_2_c.find(face->mIndices[2])->second );
+            it->second.faces.push_back(cf);
         }
     }
     cout<<"Number of charts: "<<icm.size()<<endl;
@@ -415,10 +429,13 @@ void segment(const mesh_info &mi, edge_list &split_edges, chart_list &all_charts
     /* if there are no split edges, then the whole mesh is a chart */
     if(split_edges.empty()) {
         chart c = chart(mi);
-        for(int f=0; f<mesh->mNumFaces; f++)
-            c.faces.insert(f);
         for(int v=0; v<mesh->mNumVertices; v++)
-            c.m_2_u.insert(map<int,int>::value_type(v,v) );
+            c.vertices.push_back(v);
+        for(int f=0; f<mesh->mNumFaces; f++) {
+            const aiFace *face = &mesh->mFaces[f];
+            chart_face cf = chart_face(face->mIndices[0],face->mIndices[1],face->mIndices[2]);
+            c.faces.push_back(cf);
+        }
         all_charts.push_back(c);
         return;
     }

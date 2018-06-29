@@ -17,6 +17,7 @@
 #include <FreeImage.h> /* for grab() */
 #include "Eigen/Dense"
 #include "Eigen/Sparse"
+#include "OpenNL_psm.h"
 using namespace std;
 
 /* -------------------------------------------------------------------------------- */
@@ -50,13 +51,13 @@ struct edge {
 
 struct seg_edge {
     edge e;
-    float sharpness; //angle
+    double sharpness; //angle
     bool isChosen;
 
     seg_edge(edge ee) : e(ee) {
         isChosen = false;
     }
-    seg_edge(edge ee, float s) : e(ee) {
+    seg_edge(edge ee, double s) : e(ee) {
         sharpness = s;
         isChosen = false;
     }
@@ -88,9 +89,9 @@ struct face_pair {
 };
 
 struct angle_index {
-    float angle;
+    double angle;
     int id;
-    angle_index(float a, int i) : angle(a), id(i) {}
+    angle_index(double a, int i) : angle(a), id(i) {}
     friend bool operator < (const angle_index& x, const angle_index& y) {
         if(x.angle<y.angle)
             return true;
@@ -99,9 +100,9 @@ struct angle_index {
 };
 
 struct dist_index {
-    float dist;
+    double dist;
     int id;
-    dist_index(float d, int i) : dist(d), id(i) {}
+    dist_index(double d, int i) : dist(d), id(i) {}
     friend bool operator < (const dist_index& x, const dist_index& y) {
         if(x.dist<y.dist)
             return true;
@@ -109,13 +110,23 @@ struct dist_index {
     }
 };
 
+struct chart_face {
+    int indices[3];
+    chart_face() {}
+    chart_face(int a, int b, int c) { indices[0]=a; indices[1]=b; indices[2]=c; }
+};
+
 struct box {
-    float min_u, width;
-    float min_v, height;
+    double min_u, width;
+    double min_v, height;
 };
 
 enum insert_mode {
-    INSERT_RIGHT, INSERT_TOP, INSERT_RIGHT_TOP
+    INSERT_RIGHT, INSERT_TOP
+};
+
+enum param_mode {
+    PARAM_OPENNL, PARAM_EIGEN
 };
 
 /* -------------------------------------------------------------------------------- */
@@ -136,7 +147,7 @@ typedef vector<vertex_edge_map> scene_vertex_edge_map;
 typedef aiVector3D* face_normals;
 typedef vector<face_normals> scene_face_normals;
 
-typedef aiVector2D* UV_list;
+typedef Eigen::Vector2d* UV_list;
 typedef vector<UV_list> scene_UV_list;
 
 typedef Eigen::Vector2d triangle[3];
@@ -171,8 +182,9 @@ struct scene_info {
 
 struct chart {
     const mesh_info mi;
-    set<int> faces;
-    map<int,int> m_2_u; /* mesh vertex id -> UV vertex id */
+    vector<int> vertices;
+    vector<chart_face> faces;
+    map<int,int> m_2_c; //mesh vertex id -> chart vertex id
     chart(const mesh_info &mi) : mi(mi) {}
 };
 
@@ -186,8 +198,7 @@ extern void gen_edge_face_map (const aiMesh *mesh, const edge_list &el, edge_fac
 extern void gen_vertex_edge_map (const edge_list &el, vertex_edge_map &vem);
 extern void gen_face_normals(const aiMesh *mesh, face_normals &fn);
 extern void scene_segment (const scene_info &si, scene_edge_list &boundaries, chart_list &all_charts);
-extern void scene_parameterize (const scene_info &si, chart_list &all_charts, scene_UV_list &SUVL);
-extern void OpenNL_scene_parameterize (const scene_info &si, chart_list &all_charts, scene_UV_list &SUVL);
+extern void scene_parameterize (const scene_info &si, chart_list &all_charts, scene_UV_list &SUVL, param_mode mode);
 extern void rectangle_pack(const chart_list &ch, const scene_UV_list &scene_UV, scene_UV_list &result);
 extern void gen_obj(const chart_list &all_charts, scene_UV_list &all_UV);
 

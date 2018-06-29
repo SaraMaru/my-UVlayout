@@ -48,6 +48,7 @@ static GLint prev_time = 0;
 #define WINDOW_HEIGHT 600
 
 bool b_line_mode = false;
+bool b_chart_mode = false;
 bool b_UV_mode = false;
 bool b_rotate = false;
 
@@ -255,6 +256,42 @@ void recursive_render (const aiScene *sc, const aiNode* nd)
 	glPopMatrix();
 }
 
+void draw_charts (const chart_list all_charts)
+{
+	aiMatrix4x4 m = scene->mRootNode->mTransformation;
+	aiTransposeMatrix4(&m);
+	glPushMatrix();
+	glMultMatrixf((float*)&m);
+	glDisable(GL_LIGHTING);
+	if(b_line_mode)
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	else
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+	int len = all_charts.size();
+	for (int c=0; c<len; c++) {
+		const aiMesh* mesh = all_charts[c].mi.mesh;
+		//cout<<c<<"-"<<len;
+		float r = float(c)/len;
+		float g = 1-4*pow(r-0.5,2);
+		float b = c%2==0? r : 1-r;
+		glColor3f(r,g,b);
+		
+		for (vector<chart_face>::const_iterator it=all_charts[c].faces.begin(); it!=all_charts[c].faces.end(); it++) {
+			glBegin(GL_TRIANGLES);
+			for(int i = 0; i < 3; i++) {
+				int id_on_mesh = all_charts[c].vertices[it->indices[i]];
+				glVertex3fv(&mesh->mVertices[id_on_mesh].x);
+			}
+			glEnd();
+		}
+		glColor3f(1.0,1.0,1.0);
+	}
+
+	glEnable(GL_LIGHTING);
+	glPopMatrix();
+}
+
 void draw_split_edges() {
 	aiMatrix4x4 m = scene->mRootNode->mTransformation;
 	aiTransposeMatrix4(&m);
@@ -301,13 +338,12 @@ void draw_UVs() {
 		const UV_list UV = packed_all_UV[c];
 		const chart *cp = &all_charts[c];
 		const aiMesh* mesh = cp->mi.mesh;
-		for(set<int>::const_iterator it=cp->faces.begin(); it!=cp->faces.end(); it++) {
-			const aiFace* face = &mesh->mFaces[*it];
+		for(vector<chart_face>::const_iterator it=cp->faces.begin(); it!=cp->faces.end(); it++) {
 			glBegin(GL_TRIANGLES);  
-			for(unsigned int i = 0; i < face->mNumIndices; i++) {
-				int new_id = cp->m_2_u.find(face->mIndices[i])->second;
+			for(unsigned int i = 0; i < 3; i++) {
+				int new_id = it->indices[i];
 				//cout<<" i "<<new_id<<" u "<<UV[new_id].x<<" v "<<UV[new_id].y;
-				glVertex3f(UV[new_id].x,UV[new_id].y,0);
+				glVertex3f(UV[new_id].x(),UV[new_id].y(),0);
 			}
 			glEnd();
 		}
@@ -404,7 +440,10 @@ void display(void)
 				/* now begin at the root node of the imported data and traverse
 				the scenegraph by multiplying subsequent local transforms
 				together on GL's matrix stack. */
-			recursive_render(scene, scene->mRootNode);
+			if(b_chart_mode && all_charts.size()>0)
+				draw_charts(all_charts);
+			else
+				recursive_render(scene, scene->mRootNode);
 			/*glEndList();
 		}
 		glCallList(scene_list);*/
@@ -426,20 +465,26 @@ void key(unsigned char k, int x, int y)
 	switch(k)
 	{
 	    case 27: { exit(0); break; } /* press esc to quit */
-        case 'a': { if(!b_UV_mode) {eye[0]+=0.05; center[0]+=0.05;} else {UV_eye[0]+=0.05; UV_center[0]+=0.05;} break; }
-	    case 'd': { if(!b_UV_mode) {eye[0]-=0.05; center[0]-=0.05;} else {UV_eye[0]-=0.05; UV_center[0]-=0.05;} break; }
-    	case 'w': { if(!b_UV_mode) {eye[1]-=0.05; center[1]-=0.05;} else {UV_eye[1]-=0.05; UV_center[1]-=0.05;} break; }
-	    case 's': { if(!b_UV_mode) {eye[1]+=0.05; center[1]+=0.05;} else {UV_eye[1]+=0.05; UV_center[1]+=0.05;} break; }
-	    case 'z': { if(!b_UV_mode) {eye[2]-=0.05; center[2]-=0.05;} else {UV_eye[2]-=0.05; UV_center[2]-=0.05;} break; }
-	    case 'c': { if(!b_UV_mode) {eye[2]+=0.05; center[2]+=0.05;} else {UV_eye[2]+=0.05; UV_center[2]+=0.05;} break; }
+        case 'a': { if(!b_UV_mode) {eye[0]+=0.05; center[0]+=0.05;} else {UV_eye[0]+=0.02; UV_center[0]+=0.02;} break; }
+	    case 'd': { if(!b_UV_mode) {eye[0]-=0.05; center[0]-=0.05;} else {UV_eye[0]-=0.02; UV_center[0]-=0.02;} break; }
+    	case 'w': { if(!b_UV_mode) {eye[1]-=0.05; center[1]-=0.05;} else {UV_eye[1]-=0.02; UV_center[1]-=0.02;} break; }
+	    case 's': { if(!b_UV_mode) {eye[1]+=0.05; center[1]+=0.05;} else {UV_eye[1]+=0.02; UV_center[1]+=0.02;} break; }
+	    case 'z': { if(!b_UV_mode) {eye[2]-=0.05; center[2]-=0.05;} else {UV_eye[2]-=0.02; UV_center[2]-=0.02;} break; }
+	    case 'c': { if(!b_UV_mode) {eye[2]+=0.05; center[2]+=0.05;} else {UV_eye[2]+=0.02; UV_center[2]+=0.02;} break; }
         case ' ': { if(!b_UV_mode) {b_rotate = !b_rotate; prev_time = glutGet(GLUT_ELAPSED_TIME);} break; }
 		case 'l': { if(!b_UV_mode) {b_line_mode = !b_line_mode;} break; }
+		case 'k': { if(!b_UV_mode) {b_chart_mode = !b_chart_mode;} break; }
 	    case 'e': { 
 			scene_segment( scene_info(scene,all_edges,all_efm,all_refm,all_vem,all_fn) ,all_split_edges, all_charts ); 
 			break; 
 		}
 		case 'p': { 
-			scene_parameterize( scene_info(scene,all_edges,all_efm,all_refm,all_vem,all_fn), all_charts, all_UV );
+			scene_parameterize( scene_info(scene,all_edges,all_efm,all_refm,all_vem,all_fn), all_charts, all_UV, PARAM_OPENNL );
+			rectangle_pack(all_charts,all_UV,packed_all_UV);
+			break; 
+		}
+		case 'q': {
+			scene_parameterize( scene_info(scene,all_edges,all_efm,all_refm,all_vem,all_fn), all_charts, all_UV, PARAM_EIGEN );
 			rectangle_pack(all_charts,all_UV,packed_all_UV);
 			break; 
 		}
@@ -500,7 +545,7 @@ int loadasset (const char* path)
 		scene_center.z = (scene_min.z + scene_max.z) / 2.0f;
 
 		if(scene->mRootNode->mNumChildren>0) {
-			printf("ERROR: Do not support hierarchy of nodes!\n");
+			printf("WARNING: Do not support hierarchy of nodes!\n");
 		}
 		pretreat();
 
@@ -513,6 +558,8 @@ int loadasset (const char* path)
 int main(int argc, char **argv)
 {
 	aiLogStream stream;
+
+	nlInitialize(argc, argv);
 
 	glutInitWindowSize(WINDOW_WIDTH,WINDOW_HEIGHT);
 	glutInitWindowPosition(100,100);
